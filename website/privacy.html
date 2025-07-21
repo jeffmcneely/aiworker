@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Privacy Policy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 2em;
+      max-width: 800px;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    #cookie-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #f4f4f4;
+      border-top: 1px solid #ccc;
+      padding: 1em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9em;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    }
+    #cookie-banner button {
+      background: #0078D4;
+      color: white;
+      border: none;
+      padding: 0.5em 1em;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Privacy Policy</h1>
+  <p><strong>Effective Date:</strong> [Insert Date]</p>
+
+  <p>At [Your Website Name], we take your privacy seriously. This policy outlines how we handle user data and ensure your information is protected.</p>
+
+  <h2>📘 Information We Collect</h2>
+  <ul>
+    <li><strong>Login Credentials:</strong> We collect basic authentication details such as username and password to grant access and prevent abuse.</li>
+    <li><strong>Usage Data:</strong> Anonymous, non-personal data like page views may be collected to enhance user experience.</li>
+  </ul>
+
+  <h2>🚫 What We Don’t Do</h2>
+  <ul>
+    <li>We do not sell, rent, or share your personal information with third parties.</li>
+    <li>We do not combine tracking data with outside sources or advertisers.</li>
+    <li>Your data remains strictly within our system for its intended use.</li>
+  </ul>
+
+  <h2>🛡️ How We Use Your Information</h2>
+  <ul>
+    <li><strong>Access Control:</strong> Login details are used only for user verification and security purposes.</li>
+    <li><strong>Security:</strong> We apply appropriate safeguards to protect your data from unauthorized access or disclosure.</li>
+  </ul>
+
+  <h2>🍪 Cookie Notice</h2>
+  <p>We use minimal cookies to support basic website functionality. These include session cookies for login management and performance optimization. No tracking cookies or third-party analytics are used, and no personal information is collected via cookies.</p>
+
+  <p>You may control cookie behavior through your browser settings. Disabling cookies could affect login persistence or your site preferences.</p>
+
+  <h2>📞 Contact</h2>
+  <p>If you have any questions, contact us at <a href="mailto:[your-contact-email]">[your-contact-email]</a>.</p>
+
+  <!-- Interactive Cookie Banner -->
+  <div id="cookie-banner">
+    <span>We use minimal cookies to improve site functionality. No tracking, no selling. ✅</span>
+    <button onclick="acceptCookies()">OK</button>
+  </div>
+
+  <script>
+    function acceptCookies() {
+      document.getElementById('cookie-banner').style.display = 'none';
+      localStorage.setItem('cookiesAccepted', 'true');
+    }
+
+    window.onload = function() {
+      if (localStorage.getItem('cookiesAccepted') === 'true') {
+        document.getElementById('cookie-banner').style.display = 'none';
+      }
+    };
+  </script>
+</body>
+</html>
