@@ -63,3 +63,11 @@ coverage.xml
 
 # Pyre type checker
 .pyre/
+
+# AWS SAM CLI config
+samconfig.toml
+
+# AWS SAM/CloudFormation templates
+template.yml
+template.yaml
+template-*.yml
