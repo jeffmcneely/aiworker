@@ -1,6 +1,8 @@
 // Simulate fetching 5 image URLs (replace with real fetch as needed)
 async function fetchImageUrls() {
-    try {
+    const sidebar = document.getElementById('image_area');
+    sidebar.className = 'loader'; // Show loading state
+  try {
         const response = await fetch('https://api.mcneely.io/v1/ai/s3list');
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
@@ -14,11 +16,17 @@ async function fetchImageUrls() {
 
 async function onPageLoad() {
     const imageUrls = await fetchImageUrls();
-    const sidebar = document.getElementById('sidebar');
+    const sidebar = document.getElementById('image_area');
     const expandedImage = document.getElementById('expandedImage');
     const mainPanel = document.getElementById('mainPanel');
 
+    // Clear existing content
+    sidebar.replaceChildren();
     // Populate sidebar with thumbnails
+    if (imageUrls.length === 0) {
+        sidebar.innerHTML = '<p>No images found.</p>';
+        return;
+    }
     imageUrls.forEach((url, idx) => {
         const thumb = document.createElement('img');
         thumb.src = url;
@@ -84,9 +92,4 @@ async function submitRequest(event) {
   } catch (err) {
     errorMsg.textContent = 'Error: ' + err.message;
   }
-}
-
-const requestForm = document.getElementById('requestForm');
-if (requestForm) {
-  requestForm.addEventListener('submit', submitRequest);
 }
