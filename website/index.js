@@ -14,7 +14,7 @@ async function fetchImageUrls() {
 
 async function onPageLoad() {
     const imageUrls = await fetchImageUrls();
-    const sidebar = document.getElementById('image_area');
+    const sidebar = document.getElementById('sidebar');
     const expandedImage = document.getElementById('expandedImage');
     const mainPanel = document.getElementById('mainPanel');
 
