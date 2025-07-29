@@ -86,16 +86,11 @@ def main():
         elif sys.argv[1] in ("recv", "receive"):
             receive_sqs_messages(QUEUE_NAME)
             return
-
-
-    try:
+    else:
         while True:
+            receive_sqs_messages(QUEUE_NAME)
             time.sleep(1)
-    except KeyboardInterrupt:
-        for observer in observers:
-            observer.stop()
-        for observer in observers:
-            observer.join()
+
 
 # Utility to look up SQS URL by queue name
 def get_sqs_url_by_name(queue_name):

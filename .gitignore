@@ -75,3 +75,5 @@ lambda/former2.yml
 
 comfy-watcher/s3-policy.json
 comfy-watcher/sqs-policy.json
+
+comfy-watcher/venv/
