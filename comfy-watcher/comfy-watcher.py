@@ -1,3 +1,4 @@
+from fileinput import filename
 import logging
 
 
@@ -99,8 +100,9 @@ def receive_sqs_messages(queue_name):
 #        logger.info("Inserted seed and uuid into EXIF metadata.")
         # Upload generated image to S3
         image_filename = poll_response["9"]["images"][0]["filename"]
+        ext = os.path.splitext(image_filename)[1][1:]
         image_path = os.path.join(OUTPUT_FOLDER, image_filename)
-        s3_key = sqs_body["id"]
+        s3_key = sqs_body["id"] + '.' + ext
         try:
             s3.upload_file(image_path, S3_BUCKET, s3_key)
             logger.debug(f"Uploaded {image_path} to s3://{S3_BUCKET}/{s3_key}")
