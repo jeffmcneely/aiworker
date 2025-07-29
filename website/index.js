@@ -55,8 +55,12 @@ async function submitRequest(event) {
   const width = parseInt(document.getElementById('width').value, 10);
   const steps = parseInt(document.getElementById('steps').value, 10);
   const prompt = document.getElementById('prompt').value.trim();
+  const model = document.getElementById('model').value;
   const errorMsg = document.getElementById('errorMsg');
+  const successMsg = document.getElementById('successMsg');
   errorMsg.textContent = '';
+  successMsg.style.display = 'none';
+  successMsg.textContent = '';
 
   if (height > 1024 || width > 1024) {
     errorMsg.textContent = 'Height and width must not exceed 1024.';
@@ -75,7 +79,7 @@ async function submitRequest(event) {
     return;
   }
 
-  const payload = { height, width, steps, prompt };
+  const payload = { height, width, steps, prompt, model };
 
   try {
     const response = await fetch('https://api.mcneely.io/v1/ai/request', {
@@ -87,8 +91,12 @@ async function submitRequest(event) {
       throw new Error('API request failed');
     }
     const result = await response.json();
-    alert('Request submitted successfully!');
-    // Optionally handle/display result here
+    successMsg.textContent = 'Request submitted successfully!';
+    successMsg.style.display = 'block';
+    setTimeout(() => {
+      successMsg.style.display = 'none';
+      successMsg.textContent = '';
+    }, 3000);
   } catch (err) {
     errorMsg.textContent = 'Error: ' + err.message;
   }
