@@ -153,7 +153,7 @@ const requestImage = async (event) => {
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
-    body: JSON.stringify({ status: 'Message sent', id, data: { height, width, steps, prompt } }),
+    body: JSON.stringify({ status: 'Message sent', data: { height, width, steps, prompt } }),
   };
 };
 
