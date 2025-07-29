@@ -58,41 +58,29 @@ Set the following environment variables (in your shell or systemd service file):
 
 To create an AWS IAM user with S3 and SQS access to a single bucket and queue, use the following steps (replace names as needed):
 
-1. Edit s3-policy.json and sqs-policy.json to include your bucket and queue ARNs.
 
-2. Run the following commands in your terminal:
+```sh
+# 1. Copy `s3-sample.json` and `sqs-sample.json` to `s3-policy.json` and `sqs-policy.json` respectively.
+cp s3-sample.json s3-policy.json
+cp sqs-sample.json sqs-policy.json
+```
+
+2. Edit s3-policy.json and sqs-policy.json to include your bucket and queue ARNs.
+
+3. Run the following commands in your terminal:
 
 ```sh
 # 1. Create the user
-aws iam create-user --user-name my-s3sqs-user
+aws iam create-user --user-name comfy-watcher
 
 # 2. Attach the S3 policy to the user
-aws iam put-user-policy --user-name my-s3sqs-user --policy-name S3RWAccess --policy-document file://s3-policy.json
+aws iam put-user-policy --user-name comfy-watcher --policy-name S3RWAccess --policy-document file://s3-policy.json
 
 # 3. Attach the SQS policy to the user
-aws iam put-user-policy --user-name my-s3sqs-user --policy-name SQSAccess --policy-document file://sqs-policy.json
+aws iam put-user-policy --user-name comfy-watcher --policy-name SQSAccess --policy-document file://sqs-policy.json
 
 # 4. (Optional) Create access keys for the user
-aws iam create-access-key --user-name my-s3sqs-user
-```
-
-Example sqs-policy.json for FIFO queue:
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "sqs:SendMessage",
-        "sqs:ReceiveMessage",
-        "sqs:DeleteMessage",
-        "sqs:GetQueueUrl"
-      ],
-      "Resource": "arn:aws:sqs:us-west-2:YOUR_ACCOUNT_ID:aiworker-queue.fifo"
-    }
-  ]
-}
+aws iam create-access-key --user-name comfy-watcher
 ```
 
 ## Notes
