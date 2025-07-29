@@ -66,12 +66,22 @@ def receive_sqs_messages(queue_name):
         # workflow variable is loaded and available here
         logger.debug("SQS message deleted")
         random_64bit = secrets.randbits(64)
-        workflow["16"]["inputs"]["text"] = sqs_body["prompt"]
-        workflow["53"]["inputs"]["height"] = sqs_body["height"]
-        workflow["53"]["inputs"]["width"] = sqs_body["width"]
-        workflow["3"]["inputs"]["steps"] = sqs_body["steps"]
-        workflow["3"]["inputs"]["seed"] = random_64bit
-        prompt = {"prompt": workflow}
+        match sqs_body.get("model", "hidream"):
+            case "hidream":
+                workflow["16"]["inputs"]["text"] = sqs_body["prompt"]
+                workflow["53"]["inputs"]["height"] = sqs_body["height"]
+                workflow["53"]["inputs"]["width"] = sqs_body["width"]
+                workflow["3"]["inputs"]["steps"] = sqs_body["steps"]
+                workflow["3"]["inputs"]["seed"] = random_64bit
+                prompt = {"prompt": workflow}
+            case "flux":
+                workflow["41"]["inputs"]["clip_l"] = sqs_body["prompt"]
+                workflow["41"]["inputs"]["t5xxl"] = sqs_body["prompt"]
+                workflow["31"]["inputs"]["seed"] = random_64bit
+                workflow["27"]["inputs"]["height"] = sqs_body["height"]
+                workflow["27"]["inputs"]["width"] = sqs_body["width"]
+
+
         data = json.dumps(prompt).encode("utf-8")
         logger.info(f"using prompt: {sqs_body['prompt']}")
         logger.debug(f"Sending workflow to ComfyUI: {data}")
@@ -91,7 +101,7 @@ def receive_sqs_messages(queue_name):
         # Upload generated image to S3
         image_filename = poll_response["9"]["images"][0]["filename"]
         image_path = os.path.join(OUTPUT_FOLDER, image_filename)
-        s3_key = image_filename
+        s3_key = sqs_body["id"]
         try:
             s3.upload_file(image_path, S3_BUCKET, s3_key)
             logger.debug(f"Uploaded {image_path} to s3://{S3_BUCKET}/{s3_key}")
