@@ -73,7 +73,6 @@ def receive_sqs_messages(queue_name):
                 workflow["53"]["inputs"]["width"] = sqs_body["width"]
                 workflow["3"]["inputs"]["steps"] = sqs_body["steps"]
                 workflow["3"]["inputs"]["seed"] = random_64bit
-                prompt = {"prompt": workflow}
             case "flux":
                 workflow["41"]["inputs"]["clip_l"] = sqs_body["prompt"]
                 workflow["41"]["inputs"]["t5xxl"] = sqs_body["prompt"]
@@ -81,7 +80,7 @@ def receive_sqs_messages(queue_name):
                 workflow["27"]["inputs"]["height"] = sqs_body["height"]
                 workflow["27"]["inputs"]["width"] = sqs_body["width"]
 
-
+        prompt = {"prompt": workflow}
         data = json.dumps(prompt).encode("utf-8")
         logger.info(f"using prompt: {sqs_body['prompt']}")
         logger.debug(f"Sending workflow to ComfyUI: {data}")
