@@ -12,15 +12,23 @@ async function fetchImageUrls() {
     }
 }
 
-async function onPageLoad() {
+async function refreshSidebar() {
     const imageUrls = await fetchImageUrls();
     const sidebar = document.getElementById('sidebar');
     const expandedImage = document.getElementById('expandedImage');
-    const mainPanel = document.getElementById('mainPanel');
+
+    // Clear existing thumbnails but keep the generation link
+    const genLink = sidebar.querySelector('.gen-link');
+    sidebar.innerHTML = '';
+    if (genLink) {
+        sidebar.appendChild(genLink);
+    }
 
     // Populate sidebar with thumbnails
     if (imageUrls.length === 0) {
-        sidebar.innerHTML = '<p>No images found.</p>';
+        const noImages = document.createElement('p');
+        noImages.textContent = 'No images found.';
+        sidebar.appendChild(noImages);
         return;
     }
     imageUrls.forEach((url, idx) => {
@@ -33,6 +41,16 @@ async function onPageLoad() {
         });
         sidebar.appendChild(thumb);
     });
+}
+
+async function onPageLoad() {
+    const expandedImage = document.getElementById('expandedImage');
+
+    // Initial load
+    await refreshSidebar();
+
+    // Set up auto-refresh every 5 seconds
+    setInterval(refreshSidebar, 5000);
 
     // Hide expanded image on click
     expandedImage.addEventListener('click', () => {
@@ -87,7 +105,7 @@ async function submitRequest(event) {
       throw new Error('API request failed');
     }
     const result = await response.json();
-    successMsg.textContent = 'Request submitted successfully!';
+    successMsg.textContent = `Request submitted successfully! ID: ${result.data.id || 'Unknown'}`;
     successMsg.style.display = 'block';
     setTimeout(() => {
       successMsg.style.display = 'none';
