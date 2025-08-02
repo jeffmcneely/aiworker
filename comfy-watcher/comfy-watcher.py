@@ -92,6 +92,20 @@ def receive_sqs_messages(queue_name):
         )
         poll_response = poll_comfyui_history(response.json().get("prompt_id"))
         logger.debug(f"Poll response: {poll_response}")
+        
+        # Upload poll_response to S3 as JSON
+        output_json_key = f"{random_64bit}_output.json"
+        try:
+            s3.put_object(
+                Bucket=S3_BUCKET,
+                Key=output_json_key,
+                Body=json.dumps(poll_response),
+                ContentType='application/json'
+            )
+            logger.debug(f"Uploaded poll_response to s3://{S3_BUCKET}/{output_json_key}")
+        except Exception as e:
+            logger.error(f"Failed to upload poll_response to S3: {e}")
+        
         # insert_seed_uuid_exif(
         #     os.path.join(OUTPUT_FOLDER, poll_response["9"]["images"][0]["filename"]),
         #     random_64bit,
