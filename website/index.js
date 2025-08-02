@@ -44,6 +44,10 @@ async function refreshSidebar() {
         return;
     }
     imageUrls.forEach((imageData, idx) => {
+        // Create container for image and filename
+        const thumbContainer = document.createElement('div');
+        thumbContainer.className = 'thumb-container';
+        
         const thumb = document.createElement('img');
         thumb.src = imageData.url;
         thumb.alt = imageData.filename;
@@ -55,7 +59,15 @@ async function refreshSidebar() {
             const imageTitle = document.getElementById('imageTitle');
             imageTitle.textContent = imageData.filename;
         });
-        sidebar.appendChild(thumb);
+        
+        // Create filename label showing first 8 characters
+        const filenameLabel = document.createElement('div');
+        filenameLabel.className = 'filename-label';
+        filenameLabel.textContent = imageData.filename.substring(0, 8);
+        
+        thumbContainer.appendChild(thumb);
+        thumbContainer.appendChild(filenameLabel);
+        sidebar.appendChild(thumbContainer);
     });
 }
 

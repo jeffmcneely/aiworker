@@ -19,6 +19,12 @@ body {
     gap: 16px;
     border-right: 1px solid #ddd;
 }
+.thumb-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
 .sidebar img {
     width: 64px;
     height: 64px;
@@ -30,6 +36,16 @@ body {
 }
 .sidebar img:hover {
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.filename-label {
+    font-size: 10px;
+    color: #666;
+    text-align: center;
+    font-family: monospace;
+    max-width: 64px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .main-panel {
     width: 80%;
