@@ -257,6 +257,7 @@ async function submitRequest(event) {
   const width = parseInt(document.getElementById('width').value, 10);
   const steps = parseInt(document.getElementById('steps').value, 10);
   let seed = parseInt(document.getElementById('seed').value, 10);
+  const regenerateSeed = document.getElementById('regenerateSeed').checked;
   const prompt = document.getElementById('prompt').value.trim();
   const model = document.getElementById('model').value;
   const errorMsg = document.getElementById('errorMsg');
@@ -282,8 +283,8 @@ async function submitRequest(event) {
     return;
   }
 
-  // Generate random seed if seed is 0
-  if (seed === 0) {
+  // Generate random seed if checkbox is checked or seed is 0
+  if (regenerateSeed || seed === 0) {
     seed = Math.floor(Math.random() * (2**53 - 1));
     // Update the input field to show the generated seed
     document.getElementById('seed').value = seed;
