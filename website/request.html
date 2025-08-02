@@ -7,32 +7,42 @@
   <script src="index.js"></script>
 </head>
 <body>
-  <h2>Image Generation Request</h2>
-    <label>
-      Model:
-      <select id="model" name="model">
-        <option value="flux">flux</option>
-        <option value="hidream">hidream</option>
-      </select>
-    </label>
-    <label>
-      Height:
-      <input type="number" id="height" name="height" value="512" min="1" max="1024" required>
-    </label>
-    <label>
-      Width:
-      <input type="number" id="width" name="width" value="512" min="1" max="1024" required>
-    </label>
-    <label>
-      Steps:
-      <input type="number" id="steps" name="steps" value="50" min="1" max="100" required>
-    </label>
-    <label>
-      Prompt:
-      <textarea id="prompt" name="prompt" rows="4" required></textarea>
-    </label>
-    <div class="error" id="errorMsg"></div>
-    <div class="success" id="successMsg" style="display:none;"></div>
-    <button type="submit" onclick="submitRequest(event)">Submit</button>
+  <div class="container">
+    <div class="request-form">
+      <h2>Image Generation Request</h2>
+        <label>
+          Model:
+          <select id="model" name="model">
+            <option value="flux">flux</option>
+            <option value="hidream">hidream</option>
+          </select>
+        </label>
+        <label>
+          Height:
+          <input type="number" id="height" name="height" value="512" min="1" max="1024" required>
+        </label>
+        <label>
+          Width:
+          <input type="number" id="width" name="width" value="512" min="1" max="1024" required>
+        </label>
+        <label>
+          Steps:
+          <input type="number" id="steps" name="steps" value="50" min="1" max="100" required>
+        </label>
+        <label>
+          Prompt:
+          <textarea id="prompt" name="prompt" rows="4" required></textarea>
+        </label>
+        <div class="error" id="errorMsg"></div>
+        <div class="success" id="successMsg" style="display:none;"></div>
+        <button type="submit" onclick="submitRequest(event)">Submit</button>
+    </div>
+    <div class="jobs-panel" id="jobsPanel">
+      <h3>Submitted Jobs</h3>
+      <div class="jobs-list" id="jobsList">
+        <!-- Jobs will be dynamically added here -->
+      </div>
+    </div>
+  </div>
 </body>
 </html>

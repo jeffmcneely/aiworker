@@ -69,17 +69,100 @@ async function onPageLoad() {
     setInterval(refreshSidebar, 30000);
 
     // Hide expanded image on click
-    expandedImage.addEventListener('click', () => {
-        expandedImage.classList.remove('visible');
-        // Clear filename when hiding image
-        const imageTitle = document.getElementById('imageTitle');
-        imageTitle.textContent = '';
-        // Optional: clear src after transition
-        setTimeout(() => { expandedImage.src = ''; }, 300);
-    });
+    if (expandedImage) {
+        expandedImage.addEventListener('click', () => {
+            expandedImage.classList.remove('visible');
+            // Clear filename when hiding image
+            const imageTitle = document.getElementById('imageTitle');
+            if (imageTitle) {
+                imageTitle.textContent = '';
+            }
+            // Optional: clear src after transition
+            setTimeout(() => { expandedImage.src = ''; }, 300);
+        });
+    }
+    
+    // Load submitted jobs from storage
+    loadJobsFromStorage();
 }
 
 window.onload = onPageLoad;
+
+// Job tracking functionality
+function addJobToList(id, timestamp) {
+    const jobsList = document.getElementById('jobsList');
+    if (!jobsList) return; // Jobs panel not available on this page
+    
+    const jobItem = document.createElement('div');
+    jobItem.className = 'job-item';
+    
+    const timestampDiv = document.createElement('div');
+    timestampDiv.className = 'job-timestamp';
+    timestampDiv.textContent = timestamp;
+    
+    const idDiv = document.createElement('div');
+    idDiv.className = 'job-id';
+    idDiv.textContent = `ID: ${id}`;
+    
+    jobItem.appendChild(timestampDiv);
+    jobItem.appendChild(idDiv);
+    
+    // Add to the top of the list
+    jobsList.insertBefore(jobItem, jobsList.firstChild);
+    
+    // Keep only the last 10 jobs
+    while (jobsList.children.length > 10) {
+        jobsList.removeChild(jobsList.lastChild);
+    }
+    
+    // Save to localStorage
+    saveJobToStorage(id, timestamp);
+}
+
+function saveJobToStorage(id, timestamp) {
+    const jobs = getJobsFromStorage();
+    jobs.unshift({ id, timestamp });
+    
+    // Keep only the last 10 jobs
+    const limitedJobs = jobs.slice(0, 10);
+    localStorage.setItem('submittedJobs', JSON.stringify(limitedJobs));
+}
+
+function getJobsFromStorage() {
+    try {
+        const jobs = localStorage.getItem('submittedJobs');
+        return jobs ? JSON.parse(jobs) : [];
+    } catch (error) {
+        console.error('Error reading jobs from storage:', error);
+        return [];
+    }
+}
+
+function loadJobsFromStorage() {
+    const jobsList = document.getElementById('jobsList');
+    if (!jobsList) return; // Jobs panel not available on this page
+    
+    const jobs = getJobsFromStorage();
+    jobs.forEach(job => {
+        const jobItem = document.createElement('div');
+        jobItem.className = 'job-item';
+        
+        const timestampDiv = document.createElement('div');
+        timestampDiv.className = 'job-timestamp';
+        timestampDiv.textContent = job.timestamp;
+        
+        const idDiv = document.createElement('div');
+        idDiv.className = 'job-id';
+        idDiv.textContent = `ID: ${job.id}`;
+        
+        jobItem.appendChild(timestampDiv);
+        jobItem.appendChild(idDiv);
+        jobsList.appendChild(jobItem);
+    });
+}
+
+// Initialize jobs list when page loads
+document.addEventListener('DOMContentLoaded', loadJobsFromStorage);
 
 // JavaScript for request.html
 async function submitRequest(event) {
@@ -124,7 +207,13 @@ async function submitRequest(event) {
       throw new Error('API request failed');
     }
     const result = await response.json();
-    successMsg.textContent = `Request submitted successfully! ID: ${result.data.id || 'Unknown'}`;
+    const jobId = result.data.id || 'Unknown';
+    const timestamp = new Date().toLocaleString();
+    
+    // Add job to the submitted jobs list
+    addJobToList(jobId, timestamp);
+    
+    successMsg.textContent = `Request submitted successfully! ID: ${jobId}`;
     successMsg.style.display = 'block';
     setTimeout(() => {
       successMsg.style.display = 'none';
