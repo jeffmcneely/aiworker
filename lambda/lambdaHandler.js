@@ -131,9 +131,10 @@ const requestImage = async (event) => {
     };
   }
 
-  // Generate UUID and add to message
+  // Generate UUID and 64-bit random seed
   const id = randomUUID();
-  const messageObj = { id, height, width, steps, prompt, model };
+  const seed = Math.floor(Math.random() * (2**53 - 1)); // Generate 64-bit random number (using max safe integer)
+  const messageObj = { id, height, width, steps, prompt, model, seed };
   const message = JSON.stringify(messageObj);
 
   // Upload message to S3 as a JSON file
@@ -179,7 +180,7 @@ const requestImage = async (event) => {
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
-    body: JSON.stringify({ status: 'Message sent', data: { id, height, width, steps, prompt, model } }),
+    body: JSON.stringify({ status: 'Message sent', data: { id, height, width, steps, prompt, model, seed } }),
   };
 };
 

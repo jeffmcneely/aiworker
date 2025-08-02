@@ -66,18 +66,19 @@ def receive_sqs_messages(queue_name):
 
         # workflow variable is loaded and available here
         logger.debug("SQS message deleted")
-        random_64bit = secrets.randbits(64)
+        # Use seed from the SQS message instead of generating a new one
+        seed = sqs_body.get("seed", secrets.randbits(64))  # Fallback to random if not provided
         match sqs_body.get("model", "hidream"):
             case "hidream":
                 workflow["16"]["inputs"]["text"] = sqs_body["prompt"]
                 workflow["53"]["inputs"]["height"] = sqs_body["height"]
                 workflow["53"]["inputs"]["width"] = sqs_body["width"]
                 workflow["3"]["inputs"]["steps"] = sqs_body["steps"]
-                workflow["3"]["inputs"]["seed"] = random_64bit
+                workflow["3"]["inputs"]["seed"] = seed
             case "flux":
                 workflow["41"]["inputs"]["clip_l"] = sqs_body["prompt"]
                 workflow["41"]["inputs"]["t5xxl"] = sqs_body["prompt"]
-                workflow["31"]["inputs"]["seed"] = random_64bit
+                workflow["31"]["inputs"]["seed"] = seed
                 workflow["27"]["inputs"]["height"] = sqs_body["height"]
                 workflow["27"]["inputs"]["width"] = sqs_body["width"]
 
@@ -93,7 +94,7 @@ def receive_sqs_messages(queue_name):
         poll_response = poll_comfyui_history(response.json().get("prompt_id"))
         logger.debug(f"Poll response: {poll_response}")
         
-        # Upload poll_response to S3 as JSON
+        # Upload poll_response to S3 as JSON using the message ID
         output_json_key = f"{sqs_body['id']}_output.json"
         try:
             s3.put_object(
@@ -108,7 +109,7 @@ def receive_sqs_messages(queue_name):
         
         # insert_seed_uuid_exif(
         #     os.path.join(OUTPUT_FOLDER, poll_response["9"]["images"][0]["filename"]),
-        #     random_64bit,
+        #     seed,
         #     sqs_body.get("id"),
         # )
 #        logger.info("Inserted seed and uuid into EXIF metadata.")
