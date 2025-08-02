@@ -75,13 +75,20 @@ def receive_sqs_messages(queue_name):
                 workflow["53"]["inputs"]["width"] = sqs_body["width"]
                 workflow["3"]["inputs"]["steps"] = sqs_body["steps"]
                 workflow["3"]["inputs"]["seed"] = seed
+                workflow["40"]["inputs"]["text"] = sqs_body['negativePrompt']
             case "flux":
                 workflow["41"]["inputs"]["clip_l"] = sqs_body["prompt"]
                 workflow["41"]["inputs"]["t5xxl"] = sqs_body["prompt"]
                 workflow["31"]["inputs"]["seed"] = seed
                 workflow["27"]["inputs"]["height"] = sqs_body["height"]
                 workflow["27"]["inputs"]["width"] = sqs_body["width"]
-
+            case "omnigen":
+                workflow["6"]["inputs"]["text"] = sqs_body["prompt"]
+                workflow["11"]["inputs"]["height"] = sqs_body["height"]
+                workflow["11"]["inputs"]["width"] = sqs_body["width"]
+                #workflow["23"]["inputs"]["steps"] = sqs_body["steps"]
+                workflow["3"]["inputs"]["seed"] = seed
+                workflow["7"]["inputs"]["text"] = sqs_body['negativePrompt']
         prompt = {"prompt": workflow}
         data = json.dumps(prompt).encode("utf-8")
         logger.info(f"using prompt: {sqs_body['prompt']}")

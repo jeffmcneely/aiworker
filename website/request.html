@@ -16,6 +16,7 @@
           <select id="model" name="model">
             <option value="flux">flux</option>
             <option value="hidream">hidream</option>
+            <option value="omnigen">omnigen</option>
           </select>
         </label>
         <label>
@@ -43,6 +44,10 @@
         <label>
           Prompt:
           <textarea id="prompt" name="prompt" rows="4" required></textarea>
+        </label>
+        <label>
+          Negative Prompt:
+          <textarea id="negativePrompt" name="negativePrompt" rows="4"></textarea>
         </label>
         <div class="error" id="errorMsg"></div>
         <div class="success" id="successMsg" style="display:none;"></div>

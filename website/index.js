@@ -261,6 +261,7 @@ async function submitRequest(event) {
   let seed = parseInt(document.getElementById('seed').value, 10);
   const regenerateSeed = document.getElementById('regenerateSeed').checked;
   const prompt = document.getElementById('prompt').value.trim();
+  const negativePrompt = document.getElementById('negativePrompt').value.trim();
   const model = document.getElementById('model').value;
   const errorMsg = document.getElementById('errorMsg');
   const successMsg = document.getElementById('successMsg');
@@ -284,6 +285,10 @@ async function submitRequest(event) {
     errorMsg.textContent = 'Prompt must not exceed 10000 characters.';
     return;
   }
+  if (negativePrompt.length > 10000) {
+    errorMsg.textContent = 'Negative prompt must not exceed 10000 characters.';
+    return;
+  }
 
   // Generate random seed if checkbox is checked or seed is 0
   if (regenerateSeed || seed === 0) {
@@ -292,7 +297,7 @@ async function submitRequest(event) {
     document.getElementById('seed').value = seed;
   }
 
-  const payload = { height, width, steps, seed, prompt, model };
+  const payload = { height, width, steps, seed, prompt, negativePrompt, model };
 
   try {
     const response = await fetch('https://api.mcneely.io/v1/ai/request', {
