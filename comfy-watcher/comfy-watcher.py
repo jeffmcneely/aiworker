@@ -94,7 +94,7 @@ def receive_sqs_messages(queue_name):
         logger.debug(f"Poll response: {poll_response}")
         
         # Upload poll_response to S3 as JSON
-        output_json_key = f"{random_64bit}_output.json"
+        output_json_key = f"{sqs_body['id']}_output.json"
         try:
             s3.put_object(
                 Bucket=S3_BUCKET,
