@@ -191,6 +191,65 @@ function loadJobsFromStorage() {
 // Initialize jobs list when page loads
 document.addEventListener('DOMContentLoaded', loadJobsFromStorage);
 
+// Function to fetch and display completed jobs from s3list
+async function loadCompletedJobs() {
+    const jobsList = document.getElementById('jobsList');
+    if (!jobsList) return; // Jobs panel not available on this page
+    
+    try {
+        const response = await fetch('https://api.mcneely.io/v1/ai/s3list');
+        if (!response.ok) throw new Error('Network response was not ok');
+        const completedJobs = await response.json();
+        
+        if (Array.isArray(completedJobs) && completedJobs.length > 0) {
+            // Add a separator for completed jobs
+            const separator = document.createElement('div');
+            separator.className = 'job-separator';
+            separator.textContent = '--- Completed Jobs ---';
+            jobsList.appendChild(separator);
+            
+            // Add completed jobs to the list
+            completedJobs.forEach(job => {
+                const jobItem = document.createElement('div');
+                jobItem.className = 'job-item completed-job';
+                
+                const timestampDiv = document.createElement('div');
+                timestampDiv.className = 'job-timestamp';
+                const jobDate = new Date(job.timestamp);
+                timestampDiv.textContent = jobDate.toLocaleString();
+                
+                const idDiv = document.createElement('div');
+                idDiv.className = 'job-id';
+                idDiv.textContent = `UUID: ${job.uuid}`;
+                
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'job-status';
+                statusDiv.textContent = 'COMPLETED';
+                
+                jobItem.appendChild(timestampDiv);
+                jobItem.appendChild(idDiv);
+                jobItem.appendChild(statusDiv);
+                jobsList.appendChild(jobItem);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to fetch completed jobs:', error);
+    }
+}
+
+// Enhanced page load for request.html
+async function loadRequestPage() {
+    // Load submitted jobs from storage
+    loadJobsFromStorage();
+    // Load completed jobs from s3list
+    await loadCompletedJobs();
+}
+
+// Check if we're on the request page and load appropriate content
+if (window.location.pathname.includes('request.html')) {
+    document.addEventListener('DOMContentLoaded', loadRequestPage);
+}
+
 // JavaScript for request.html
 async function submitRequest(event) {
   event.preventDefault();

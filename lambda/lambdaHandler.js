@@ -83,7 +83,9 @@ async function getRecentS3FileUrls(bucketName, region = process.env.AWS_REGION, 
         return {
           filename: obj.Key,
           url: url,
-          prompt: prompt
+          prompt: prompt,
+          timestamp: obj.LastModified,
+          uuid: baseFilename
         };
       })
     );
