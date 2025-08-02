@@ -4,7 +4,7 @@ async function fetchImageUrls() {
         const response = await fetch('https://api.mcneely.io/v1/ai/s3list');
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
-        // Expecting an array of image URLs
+        // Expecting an array of objects with filename and url properties
         return Array.isArray(data) ? data : [];
     } catch (error) {
         console.error('Failed to fetch image URLs:', error);
@@ -12,17 +12,20 @@ async function fetchImageUrls() {
     }
 }
 
-let lastImageUrls = null;
+let lastImageFilenames = null;
 
 async function refreshSidebar() {
     const imageUrls = await fetchImageUrls();
     
-    // Check if the response differs from the last one
-    if (lastImageUrls && JSON.stringify(imageUrls) === JSON.stringify(lastImageUrls)) {
+    // Extract just the filenames for comparison
+    const currentFilenames = imageUrls.map(imageData => imageData.filename);
+    
+    // Check if the filenames differ from the last ones
+    if (lastImageFilenames && JSON.stringify(currentFilenames) === JSON.stringify(lastImageFilenames)) {
         return; // No changes, skip redraw
     }
     
-    lastImageUrls = imageUrls;
+    lastImageFilenames = currentFilenames;
     const sidebar = document.getElementById('sidebar');
     const expandedImage = document.getElementById('expandedImage');
 
@@ -40,13 +43,17 @@ async function refreshSidebar() {
         sidebar.appendChild(noImages);
         return;
     }
-    imageUrls.forEach((url, idx) => {
+    imageUrls.forEach((imageData, idx) => {
         const thumb = document.createElement('img');
-        thumb.src = url;
-        thumb.alt = `Thumbnail ${idx+1}`;
+        thumb.src = imageData.url;
+        thumb.alt = imageData.filename;
+        thumb.title = imageData.filename; // Show filename on hover
         thumb.addEventListener('click', () => {
-            expandedImage.src = url;
+            expandedImage.src = imageData.url;
             expandedImage.classList.add('visible');
+            // Show filename at the top of the page
+            const imageTitle = document.getElementById('imageTitle');
+            imageTitle.textContent = imageData.filename;
         });
         sidebar.appendChild(thumb);
     });
@@ -64,6 +71,9 @@ async function onPageLoad() {
     // Hide expanded image on click
     expandedImage.addEventListener('click', () => {
         expandedImage.classList.remove('visible');
+        // Clear filename when hiding image
+        const imageTitle = document.getElementById('imageTitle');
+        imageTitle.textContent = '';
         // Optional: clear src after transition
         setTimeout(() => { expandedImage.src = ''; }, 300);
     });

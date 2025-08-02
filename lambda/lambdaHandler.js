@@ -9,8 +9,8 @@ const { randomUUID } = require('crypto');
 
 
 const s3list = async (event) => {
-  const urls = await getRecentS3FileUrls(process.env.AWS_BUCKET, process.env.AWS_REGION, 5, 'png');
-  console.log('Presigned URLs:', urls);
+  const results = await getRecentS3FileUrls(process.env.AWS_BUCKET, process.env.AWS_REGION, 5, 'png');
+  console.log('S3 file results:', results);
   return {
     statusCode: 200,
     headers: {
@@ -18,7 +18,7 @@ const s3list = async (event) => {
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
-    body: JSON.stringify(urls)
+    body: JSON.stringify(results)
   };
 };
 
@@ -29,7 +29,7 @@ const s3list = async (event) => {
  * @param {string} bucketName - The S3 bucket name.
  * @param {string} region - AWS region.
  * @param {number} count - Number of recent files to fetch.
- * @returns {Promise<string[]>} Array of presigned URLs.
+ * @returns {Promise<Object[]>} Array of objects with filename and signed URL.
  */
 
 async function getRecentS3FileUrls(bucketName, region = process.env.AWS_REGION, count = 5, suffix = undefined) {
@@ -55,16 +55,20 @@ async function getRecentS3FileUrls(bucketName, region = process.env.AWS_REGION, 
 
 //    const url = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket, Key }), { expiresIn: 3600 });
 
-    // Generate presigned URLs
-    const urls = await Promise.all(
-      recentFiles.map(obj =>
-        getSignedUrl(s3Client, new GetObjectCommand({
+    // Generate presigned URLs with filename info
+    const results = await Promise.all(
+      recentFiles.map(async obj => {
+        const url = await getSignedUrl(s3Client, new GetObjectCommand({
           Bucket: bucketName,
           Key: obj.Key
-        }), { expiresIn: 3600 })
-      )
+        }), { expiresIn: 3600 });
+        return {
+          filename: obj.Key,
+          url: url
+        };
+      })
     );
-    return urls;
+    return results;
   } catch (err) {
     console.error('Error fetching S3 files:', err);
     return [];
