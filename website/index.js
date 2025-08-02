@@ -15,6 +15,9 @@ async function fetchImageUrls() {
 let lastImageFilenames = null;
 
 async function refreshSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return; // Sidebar not available on this page
+    
     const imageUrls = await fetchImageUrls();
     
     // Extract just the filenames for comparison
@@ -26,7 +29,6 @@ async function refreshSidebar() {
     }
     
     lastImageFilenames = currentFilenames;
-    const sidebar = document.getElementById('sidebar');
     const expandedImage = document.getElementById('expandedImage');
 
     // Clear existing thumbnails but keep the generation link
