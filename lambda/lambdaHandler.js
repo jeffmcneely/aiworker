@@ -55,16 +55,35 @@ async function getRecentS3FileUrls(bucketName, region = process.env.AWS_REGION, 
 
 //    const url = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket, Key }), { expiresIn: 3600 });
 
-    // Generate presigned URLs with filename info
+    // Generate presigned URLs with filename info and prompt
     const results = await Promise.all(
       recentFiles.map(async obj => {
         const url = await getSignedUrl(s3Client, new GetObjectCommand({
           Bucket: bucketName,
           Key: obj.Key
         }), { expiresIn: 3600 });
+        
+        // Get base filename without extension and read corresponding JSON
+        const baseFilename = obj.Key.replace(/\.[^/.]+$/, "");
+        const jsonKey = `${baseFilename}.json`;
+        let prompt = null;
+        
+        try {
+          const jsonResponse = await s3Client.send(new GetObjectCommand({
+            Bucket: bucketName,
+            Key: jsonKey
+          }));
+          const jsonContent = await jsonResponse.Body.transformToString();
+          const jsonData = JSON.parse(jsonContent);
+          prompt = jsonData.prompt || null;
+        } catch (err) {
+          console.log(`No JSON file found for ${jsonKey} or error reading it:`, err.message);
+        }
+        
         return {
           filename: obj.Key,
-          url: url
+          url: url,
+          prompt: prompt
         };
       })
     );

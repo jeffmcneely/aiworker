@@ -58,6 +58,15 @@ async function refreshSidebar() {
             // Show filename at the top of the page
             const imageTitle = document.getElementById('imageTitle');
             imageTitle.textContent = imageData.filename;
+            
+            // Show prompt if available
+            const imagePrompt = document.getElementById('imagePrompt');
+            if (imagePrompt && imageData.prompt) {
+                imagePrompt.textContent = imageData.prompt;
+                imagePrompt.style.display = 'block';
+            } else if (imagePrompt) {
+                imagePrompt.style.display = 'none';
+            }
         });
         
         // Create filename label showing first 8 characters
@@ -88,6 +97,12 @@ async function onPageLoad() {
             const imageTitle = document.getElementById('imageTitle');
             if (imageTitle) {
                 imageTitle.textContent = '';
+            }
+            // Clear prompt when hiding image
+            const imagePrompt = document.getElementById('imagePrompt');
+            if (imagePrompt) {
+                imagePrompt.textContent = '';
+                imagePrompt.style.display = 'none';
             }
             // Optional: clear src after transition
             setTimeout(() => { expandedImage.src = ''; }, 300);
