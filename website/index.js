@@ -256,6 +256,7 @@ async function submitRequest(event) {
   const height = parseInt(document.getElementById('height').value, 10);
   const width = parseInt(document.getElementById('width').value, 10);
   const steps = parseInt(document.getElementById('steps').value, 10);
+  let seed = parseInt(document.getElementById('seed').value, 10);
   const prompt = document.getElementById('prompt').value.trim();
   const model = document.getElementById('model').value;
   const errorMsg = document.getElementById('errorMsg');
@@ -281,7 +282,14 @@ async function submitRequest(event) {
     return;
   }
 
-  const payload = { height, width, steps, prompt, model };
+  // Generate random seed if seed is 0
+  if (seed === 0) {
+    seed = Math.floor(Math.random() * (2**53 - 1));
+    // Update the input field to show the generated seed
+    document.getElementById('seed').value = seed;
+  }
+
+  const payload = { height, width, steps, seed, prompt, model };
 
   try {
     const response = await fetch('https://api.mcneely.io/v1/ai/request', {

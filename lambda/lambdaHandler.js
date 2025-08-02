@@ -114,27 +114,28 @@ const requestImage = async (event) => {
   console.log('Received event:', JSON.stringify(event));
   const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
   const s3Client = new S3Client({ region: process.env.AWS_REGION });
-  const { height, width, steps, prompt, model } = JSON.parse(event.body || '{}');
+  const { height, width, steps, seed, prompt, model } = JSON.parse(event.body || '{}');
 
   // Input validation
   if (
     typeof height !== 'number' || height > 1024 ||
     typeof width !== 'number' || width > 1024 ||
     typeof steps !== 'number' || steps > 100 ||
+    typeof seed !== 'number' || seed < 0 ||
     typeof prompt !== 'string' || prompt.length > 10000 ||
     (model !== 'hidream' && model !== 'flux')
   ) {
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Invalid input: height and width must be <= 1024, steps <= 100, prompt length < 10000, model must be hidream or flux.' }),
+      body: JSON.stringify({ error: 'Invalid input: height and width must be <= 1024, steps <= 100, seed must be >= 0, prompt length < 10000, model must be hidream or flux.' }),
     };
   }
 
-  // Generate UUID and 64-bit random seed
+  // Generate UUID and handle seed
   const id = randomUUID();
-  const seed = Math.floor(Math.random() * (2**53 - 1)); // Generate 64-bit random number (using max safe integer)
-  const messageObj = { id, height, width, steps, prompt, model, seed };
+  const finalSeed = seed === 0 ? Math.floor(Math.random() * (2**53 - 1)) : seed;
+  const messageObj = { id, height, width, steps, prompt, model, seed: finalSeed };
   const message = JSON.stringify(messageObj);
 
   // Upload message to S3 as a JSON file
@@ -180,7 +181,7 @@ const requestImage = async (event) => {
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
-    body: JSON.stringify({ status: 'Message sent', data: { id, height, width, steps, prompt, model, seed } }),
+    body: JSON.stringify({ status: 'Message sent', data: { id, height, width, steps, prompt, model, seed: finalSeed } }),
   };
 };
 
