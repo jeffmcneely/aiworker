@@ -12,8 +12,17 @@ async function fetchImageUrls() {
     }
 }
 
+let lastImageUrls = null;
+
 async function refreshSidebar() {
     const imageUrls = await fetchImageUrls();
+    
+    // Check if the response differs from the last one
+    if (lastImageUrls && JSON.stringify(imageUrls) === JSON.stringify(lastImageUrls)) {
+        return; // No changes, skip redraw
+    }
+    
+    lastImageUrls = imageUrls;
     const sidebar = document.getElementById('sidebar');
     const expandedImage = document.getElementById('expandedImage');
 
@@ -49,8 +58,8 @@ async function onPageLoad() {
     // Initial load
     await refreshSidebar();
 
-    // Set up auto-refresh every 5 seconds
-    setInterval(refreshSidebar, 5000);
+    // Set up auto-refresh every 30 seconds
+    setInterval(refreshSidebar, 30000);
 
     // Hide expanded image on click
     expandedImage.addEventListener('click', () => {
