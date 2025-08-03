@@ -1,11 +1,27 @@
-# Ignore Python virtual environments
+# ===== GENERAL =====
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===== PYTHON =====
+# Virtual environments
 .venv/
-
-# Ignore VS Code settings
-.vscode/
-
-# Ignore Copilot instructions and GitHub workflows
-.github/
+venv/
+env/
+ENV/
+comfy-watcher/venv/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -14,7 +30,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -64,6 +79,85 @@ coverage.xml
 # Pyre type checker
 .pyre/
 
+# ===== NODE.JS / NEXT.JS =====
+# Dependencies
+node_modules/
+website/node_modules/
+
+# Production builds
+website/.next/
+website/out/
+website/build/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+.npm
+.yarn/
+.yarn-integrity
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# next.js build output
+.next
+
+# nuxt.js build output
+.nuxt
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless
+
+# TypeScript
+*.tsbuildinfo
+
+# ===== VS CODE =====
+# VS Code settings (but allow launch.json for debugging)
+.vscode/
+!.vscode/launch.json
+
+# ===== GIT / GITHUB =====
+# Ignore Copilot instructions and GitHub workflows
+.github/
+
+# ===== AWS =====
 # AWS SAM CLI config
 samconfig.toml
 
@@ -73,7 +167,20 @@ template.yaml
 template-*.yml
 lambda/former2.yml
 
+# AWS credentials and config
+.aws/
+
+# Project specific AWS files
 comfy-watcher/s3-policy.json
 comfy-watcher/sqs-policy.json
 
-comfy-watcher/venv/
+# ===== TEMPORARY / CACHE =====
+# Temporary folders
+tmp/
+temp/
+
+# Backup files
+*.bak
+*.swp
+*.swo
+*~
