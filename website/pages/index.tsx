@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
+import MetricsWidget from '../components/MetricsWidget'
 import Link from 'next/link'
 
 interface ImageData {
@@ -60,6 +61,10 @@ export default function Home() {
         <Link href="/request" className="gen-link">
           image generation
         </Link>
+        
+        <div style={{ marginTop: '20px' }}>
+          <MetricsWidget />
+        </div>
         
         {imageUrls.length === 0 ? (
           <p>No images found.</p>
