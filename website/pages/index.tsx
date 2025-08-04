@@ -17,7 +17,7 @@ export default function Home() {
 
   const fetchImageUrls = async (): Promise<ImageData[]> => {
     try {
-      const response = await fetch('/api/s3list')
+      const response = await fetch('https://api.mcneely.io/v1/ai/s3list')
       if (!response.ok) throw new Error('Network response was not ok')
       const data = await response.json()
       return Array.isArray(data) ? data : []
