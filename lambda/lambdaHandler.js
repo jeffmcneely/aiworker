@@ -14,7 +14,7 @@ const s3list = async (event) => {
   return {
     statusCode: 200,
     headers: {
-      'Access-Control-Allow-Origin': 'https://ai.mcneely.io',
+      'Access-Control-Allow-Origin': 'https://*.ai.mcneely.io',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
@@ -104,7 +104,7 @@ const requestImage = async (event) => {
     return {
       statusCode: 204,
       headers: {
-        'Access-Control-Allow-Origin': 'https://ai.mcneely.io',
+        'Access-Control-Allow-Origin': 'https://*.ai.mcneely.io',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       },
@@ -178,7 +178,7 @@ const requestImage = async (event) => {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': 'https://ai.mcneely.io',
+      'Access-Control-Allow-Origin': 'https://*.ai.mcneely.io',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
