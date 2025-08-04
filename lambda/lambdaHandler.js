@@ -7,16 +7,45 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const { randomUUID } = require('crypto');
 
+// CORS configuration
+const allowedOrigins = [
+  'https://ai.mcneely.io',
+  'https://test.ai.mcneely.io'
+];
+
+const getCorsHeaders = (origin, isStaticFile = false) => {
+  // For static files, be more permissive
+  if (isStaticFile) {
+    return {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400'
+    };
+  }
+  
+  const isOriginAllowed = !origin || allowedOrigins.includes(origin);
+  return {
+    'Access-Control-Allow-Origin': isOriginAllowed ? (origin || '*') : 'null',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400' // 24 hours
+  };
+};
+
 
 const s3list = async (event) => {
+  const origin = event.headers?.origin || event.headers?.Origin;
+  const corsHeaders = getCorsHeaders(origin);
+  
   const results = await getRecentS3FileUrls(process.env.AWS_BUCKET, process.env.AWS_REGION, 5, 'png');
   console.log('S3 file results:', results);
   return {
     statusCode: 200,
     headers: {
-      'Access-Control-Allow-Origin': 'https://*.ai.mcneely.io',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Content-Type': 'application/json',
+      ...corsHeaders
     },
     body: JSON.stringify(results)
   };
@@ -99,18 +128,18 @@ async function getRecentS3FileUrls(bucketName, region = process.env.AWS_REGION, 
 
 
 const requestImage = async (event) => {
+  const origin = event.headers?.origin || event.headers?.Origin;
+  const corsHeaders = getCorsHeaders(origin);
+  
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
-      headers: {
-        'Access-Control-Allow-Origin': 'https://*.ai.mcneely.io',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
+      headers: corsHeaders,
       body: ''
     };
   }
+  
   console.log('Received event:', JSON.stringify(event));
   const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
   const s3Client = new S3Client({ region: process.env.AWS_REGION });
@@ -128,7 +157,10 @@ const requestImage = async (event) => {
   ) {
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      },
       body: JSON.stringify({ error: 'Invalid input: height and width must be <= 1024, steps <= 100, seed must be >= 0, prompt length < 10000, negative prompt length < 10000, model must be hidream, flux, or omnigen.' }),
     };
   }
@@ -153,7 +185,10 @@ const requestImage = async (event) => {
     console.error('Failed to upload message to S3:', err);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      },
       body: JSON.stringify({ error: 'Failed to upload message to S3.' }),
     };
   }
@@ -169,7 +204,10 @@ const requestImage = async (event) => {
     console.error('Failed to send message to SQS:', err);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      },
       body: JSON.stringify({ error: 'Failed to send message to SQS.' }),
     };
   }
@@ -178,9 +216,7 @@ const requestImage = async (event) => {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': 'https://*.ai.mcneely.io',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      ...corsHeaders
     },
     body: JSON.stringify({ status: 'Message sent', data: { id, height, width, steps, prompt, negativePrompt: negativePrompt || '', model, seed: finalSeed } }),
   };
