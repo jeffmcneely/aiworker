@@ -58,7 +58,7 @@ export default function Request() {
 
   const loadCompletedJobs = async () => {
     try {
-      const response = await fetch('/api/s3list')
+      const response = await fetch('https://api.mcneely.io/v1/ai/s3list')
       if (!response.ok) throw new Error('Network response was not ok')
       const completedJobsData = await response.json()
       
@@ -120,7 +120,7 @@ export default function Request() {
     }
 
     try {
-      const response = await fetch('/api/request', {
+      const response = await fetch('https://api.mcneely.io/v1/ai/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
