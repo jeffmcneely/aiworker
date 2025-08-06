@@ -28,6 +28,24 @@ s3 = boto3.client("s3")
 sqs = boto3.client("sqs")
 
 
+class TTI_input:
+    """Text-To-Image input parameters class"""
+    
+    def __init__(self, sqs_body_dict=None):
+        if sqs_body_dict is None:
+            sqs_body_dict = {}
+        
+        self.id = sqs_body_dict.get("id", "")
+        self.prompt = sqs_body_dict.get("prompt", "cat in a hat")
+        self.height = sqs_body_dict.get("height", 512)
+        self.width = sqs_body_dict.get("width", 512)
+        self.steps = sqs_body_dict.get("steps", 50)
+        self.seed = sqs_body_dict.get("seed", 0)
+        self.cfg = sqs_body_dict.get("cfg", 5.0)
+        self.negativePrompt = sqs_body_dict.get("negativePrompt", "blurry, low quality, distorted, ugly, bad anatomy, deformed, poorly drawn")
+        self.model = sqs_body_dict.get("model", "hidream")
+
+
 def send_sqs_message(queue_name, message_body):
     queue_url = get_sqs_url_by_name(queue_name)
     if not queue_url:
@@ -47,14 +65,15 @@ def receive_sqs_messages(queue_name):
     messages = response.get("Messages", [])
     for msg in messages:
         logger.debug(f"SQS received: {msg['Body']}")
-        sqs_body = json.loads(msg["Body"])
+        sqs_body_dict = json.loads(msg["Body"])
+        tti_input = TTI_input(sqs_body_dict)
         sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=msg["ReceiptHandle"])
         # Load workflow from hidream.json
         try:
             workflow_path = os.path.join(
                 os.path.dirname(__file__),
                 "workflows",
-                sqs_body.get("model", "hidream") + ".json",
+                tti_input.model + ".json",
             )
             with open(workflow_path, "r") as f:
                 workflow = json.load(f)
@@ -66,32 +85,33 @@ def receive_sqs_messages(queue_name):
 
         # workflow variable is loaded and available here
         logger.debug("SQS message deleted")
-        # Use seed from the SQS message instead of generating a new one
-        seed = sqs_body.get("seed", secrets.randbits(64))  # Fallback to random if not provided
-        match sqs_body.get("model", "hidream"):
+        # Use seed from the TTI_input instead of generating a new one
+        seed = tti_input.seed if tti_input.seed != 0 else secrets.randbits(64)  # Use provided seed or generate random if 0
+        match tti_input.model:
             case "hidream":
-                workflow["16"]["inputs"]["text"] = sqs_body["prompt"]
-                workflow["53"]["inputs"]["height"] = sqs_body["height"]
-                workflow["53"]["inputs"]["width"] = sqs_body["width"]
-                workflow["3"]["inputs"]["steps"] = sqs_body["steps"]
+                workflow["16"]["inputs"]["text"] = tti_input.prompt
+                workflow["53"]["inputs"]["height"] = tti_input.height
+                workflow["53"]["inputs"]["width"] = tti_input.width
+                workflow["3"]["inputs"]["steps"] = tti_input.steps
                 workflow["3"]["inputs"]["seed"] = seed
-                workflow["40"]["inputs"]["text"] = sqs_body['negativePrompt']
+                workflow["40"]["inputs"]["text"] = tti_input.negativePrompt
+                workflow["3"]["inputs"]["cfg"] = tti_input.cfg
             case "flux":
-                workflow["41"]["inputs"]["clip_l"] = sqs_body["prompt"]
-                workflow["41"]["inputs"]["t5xxl"] = sqs_body["prompt"]
+                workflow["41"]["inputs"]["clip_l"] = tti_input.prompt
+                workflow["41"]["inputs"]["t5xxl"] = tti_input.prompt
                 workflow["31"]["inputs"]["seed"] = seed
-                workflow["27"]["inputs"]["height"] = sqs_body["height"]
-                workflow["27"]["inputs"]["width"] = sqs_body["width"]
+                workflow["27"]["inputs"]["height"] = tti_input.height
+                workflow["27"]["inputs"]["width"] = tti_input.width
             case "omnigen":
-                workflow["6"]["inputs"]["text"] = sqs_body["prompt"]
-                workflow["11"]["inputs"]["height"] = sqs_body["height"]
-                workflow["11"]["inputs"]["width"] = sqs_body["width"]
-                #workflow["23"]["inputs"]["steps"] = sqs_body["steps"]
+                workflow["6"]["inputs"]["text"] = tti_input.prompt
+                workflow["11"]["inputs"]["height"] = tti_input.height
+                workflow["11"]["inputs"]["width"] = tti_input.width
+                #workflow["23"]["inputs"]["steps"] = tti_input.steps
                 workflow["3"]["inputs"]["seed"] = seed
-                workflow["7"]["inputs"]["text"] = sqs_body['negativePrompt']
+                workflow["7"]["inputs"]["text"] = tti_input.negativePrompt
         prompt = {"prompt": workflow}
         data = json.dumps(prompt).encode("utf-8")
-        logger.info(f"using prompt: {sqs_body['prompt']}")
+        logger.info(f"using prompt: {tti_input.prompt}")
         logger.debug(f"Sending workflow to ComfyUI: {data}")
         response = requests.post(
             "http://localhost:8188/prompt",
@@ -102,7 +122,7 @@ def receive_sqs_messages(queue_name):
         logger.debug(f"Poll response: {poll_response}")
         
         # Upload poll_response to S3 as JSON using the message ID
-        output_json_key = f"{sqs_body['id']}_output.json"
+        output_json_key = f"{tti_input.id}_output.json"
         try:
             s3.put_object(
                 Bucket=S3_BUCKET,
@@ -117,19 +137,46 @@ def receive_sqs_messages(queue_name):
         # insert_seed_uuid_exif(
         #     os.path.join(OUTPUT_FOLDER, poll_response["9"]["images"][0]["filename"]),
         #     seed,
-        #     sqs_body.get("id"),
+        #     tti_input.id,
         # )
 #        logger.info("Inserted seed and uuid into EXIF metadata.")
         # Upload generated image to S3
         image_filename = poll_response["9"]["images"][0]["filename"]
         ext = os.path.splitext(image_filename)[1][1:]
         image_path = os.path.join(OUTPUT_FOLDER, image_filename)
-        s3_key = sqs_body["id"] + '.' + ext
+        s3_key = tti_input.id + '.' + ext
         try:
             s3.upload_file(image_path, S3_BUCKET, s3_key)
             logger.debug(f"Uploaded {image_path} to s3://{S3_BUCKET}/{s3_key}")
         except Exception as e:
             logger.error(f"Failed to upload {image_path} to S3: {e}")
+
+        # Upload output JSON to S3 with final metadata
+        output_json = {
+            "prompt": tti_input.prompt,
+            "width": tti_input.width,
+            "height": tti_input.height,
+            "seed": seed,
+            "s3_key": s3_key,
+            "cfg": tti_input.cfg,
+            "steps": tti_input.steps,
+            "model": tti_input.model,
+            "filename": tti_input.id + "." + ext,
+            "status": "completed",
+            "timestamp": int(time.time())
+        }
+        
+        final_json_key = f"{tti_input.id}_final.json"
+        try:
+            s3.put_object(
+                Bucket=S3_BUCKET,
+                Key=final_json_key,
+                Body=json.dumps(output_json),
+                ContentType='application/json'
+            )
+            logger.debug(f"Uploaded final metadata to s3://{S3_BUCKET}/{final_json_key}")
+        except Exception as e:
+            logger.error(f"Failed to upload final metadata to S3: {e}")
 
 
 # Response: {'prompt_id': 'a3bf9763-4cf8-4aef-9d70-36d89d9d03d5', 'number': 0, 'node_errors': {}}

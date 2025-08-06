@@ -18,6 +18,7 @@ export default function Request() {
     width: 512,
     steps: 50,
     seed: 0,
+    cfg: 5.0,
     prompt: '',
     negativePrompt: 'blurry, low quality, distorted, ugly, bad anatomy, deformed, poorly drawn',
     model: 'flux',
@@ -27,6 +28,7 @@ export default function Request() {
   const [successMsg, setSuccessMsg] = useState('')
   const [jobs, setJobs] = useState<JobItem[]>([])
   const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([])
+  const [lastCompletedUuids, setLastCompletedUuids] = useState<string[]>([])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -64,7 +66,25 @@ export default function Request() {
       const completedJobsData = await response.json()
       
       if (Array.isArray(completedJobsData) && completedJobsData.length > 0) {
-        setCompletedJobs(completedJobsData)
+        const newUuids = completedJobsData.map((job: CompletedJob) => job.uuid).sort()
+        const currentUuids = lastCompletedUuids.slice().sort()
+        
+        // Only update if the UUID list has changed
+        if (JSON.stringify(newUuids) !== JSON.stringify(currentUuids)) {
+          setCompletedJobs(completedJobsData)
+          setLastCompletedUuids(newUuids)
+          
+          // Remove submitted jobs that are now in completed jobs
+          const completedUuids = new Set(newUuids)
+          setJobs(prevJobs => {
+            const filteredJobs = prevJobs.filter(job => !completedUuids.has(job.id))
+            // Update localStorage if jobs were removed
+            if (filteredJobs.length !== prevJobs.length) {
+              localStorage.setItem('submittedJobs', JSON.stringify(filteredJobs))
+            }
+            return filteredJobs
+          })
+        }
       }
     } catch (error) {
       console.error('Failed to fetch completed jobs:', error)
@@ -74,7 +94,15 @@ export default function Request() {
   useEffect(() => {
     loadJobsFromStorage()
     loadCompletedJobs()
-  }, [])
+    
+    // Set up interval to refresh completed jobs every 30 seconds
+    const interval = setInterval(() => {
+      loadCompletedJobs()
+    }, 30000)
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(interval)
+  }, [lastCompletedUuids])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -115,6 +143,7 @@ export default function Request() {
       width: formData.width,
       steps: formData.steps,
       seed: finalSeed,
+      cfg: formData.cfg,
       prompt: formData.prompt,
       negativePrompt: formData.negativePrompt,
       model: formData.model
@@ -192,6 +221,20 @@ export default function Request() {
               value={formData.steps}
               min="1"
               max="100"
+              required
+              onChange={handleInputChange}
+            />
+          </label>
+          
+          <label title="Prompt adherence - higher values make the AI follow the prompt more closely">
+            CFG:
+            <input
+              type="number"
+              name="cfg"
+              value={formData.cfg}
+              min="0"
+              max="10"
+              step="0.1"
               required
               onChange={handleInputChange}
             />

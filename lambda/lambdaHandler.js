@@ -143,7 +143,7 @@ const requestImage = async (event) => {
   console.log('Received event:', JSON.stringify(event));
   const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
   const s3Client = new S3Client({ region: process.env.AWS_REGION });
-  const { height, width, steps, seed, prompt, negativePrompt, model } = JSON.parse(event.body || '{}');
+  const { height, width, steps, seed, cfg, prompt, negativePrompt, model } = JSON.parse(event.body || '{}');
 
   // Input validation
   if (
@@ -151,6 +151,7 @@ const requestImage = async (event) => {
     typeof width !== 'number' || width > 1024 ||
     typeof steps !== 'number' || steps > 100 ||
     typeof seed !== 'number' || seed < 0 ||
+    typeof cfg !== 'number' || cfg < 0 || cfg > 10 ||
     typeof prompt !== 'string' || prompt.length > 10000 ||
     (negativePrompt && typeof negativePrompt !== 'string') || (negativePrompt && negativePrompt.length > 10000) ||
     (model !== 'hidream' && model !== 'flux' && model !== 'omnigen')
@@ -161,14 +162,14 @@ const requestImage = async (event) => {
         'Content-Type': 'application/json',
         ...corsHeaders
       },
-      body: JSON.stringify({ error: 'Invalid input: height and width must be <= 1024, steps <= 100, seed must be >= 0, prompt length < 10000, negative prompt length < 10000, model must be hidream, flux, or omnigen.' }),
+      body: JSON.stringify({ error: 'Invalid input: height and width must be <= 1024, steps <= 100, seed must be >= 0, cfg must be 0-10, prompt length < 10000, negative prompt length < 10000, model must be hidream, flux, or omnigen.' }),
     };
   }
 
   // Generate UUID and handle seed
   const id = randomUUID();
   const finalSeed = seed === 0 ? Math.floor(Math.random() * (2**53 - 1)) : seed;
-  const messageObj = { id, height, width, steps, prompt, negativePrompt: negativePrompt || '', model, seed: finalSeed };
+  const messageObj = { id, height, width, steps, prompt, negativePrompt: negativePrompt || '', model, seed: finalSeed, cfg };
   const message = JSON.stringify(messageObj);
 
   // Upload message to S3 as a JSON file
@@ -218,7 +219,7 @@ const requestImage = async (event) => {
       'Content-Type': 'application/json',
       ...corsHeaders
     },
-    body: JSON.stringify({ status: 'Message sent', data: { id, height, width, steps, prompt, negativePrompt: negativePrompt || '', model, seed: finalSeed } }),
+    body: JSON.stringify({ status: 'Message sent', data: { id, height, width, steps, prompt, negativePrompt: negativePrompt || '', model, seed: finalSeed, cfg } }),
   };
 };
 
