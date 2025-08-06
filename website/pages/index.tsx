@@ -58,31 +58,35 @@ export default function Home() {
   return (
     <Layout title="Image Gallery" description="Browse AI generated images">
       <div className="sidebar" id="sidebar">
-        <Link href="/request" className="gen-link">
-          image generation
-        </Link>
-        
-        <div style={{ marginTop: '20px' }}>
-          <MetricsWidget />
+        <div className="sidebar-content">
+          <Link href="/request" className="gen-link">
+            image generation
+          </Link>
+          
+          {imageUrls.length === 0 ? (
+            <p>No images found.</p>
+          ) : (
+            <div className="image-list">
+              {imageUrls.map((imageData, idx) => (
+                <div key={idx} className="thumb-container">
+                  <img
+                    src={imageData.url}
+                    alt={imageData.filename}
+                    title={imageData.filename}
+                    onClick={() => handleImageClick(imageData)}
+                  />
+                  <div className="filename-label">
+                    {imageData.filename.substring(0, 8)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
-        {imageUrls.length === 0 ? (
-          <p>No images found.</p>
-        ) : (
-          imageUrls.map((imageData, idx) => (
-            <div key={idx} className="thumb-container">
-              <img
-                src={imageData.url}
-                alt={imageData.filename}
-                title={imageData.filename}
-                onClick={() => handleImageClick(imageData)}
-              />
-              <div className="filename-label">
-                {imageData.filename.substring(0, 8)}
-              </div>
-            </div>
-          ))
-        )}
+        <div className="sidebar-bottom">
+          <MetricsWidget />
+        </div>
       </div>
       
       <div className="main-panel" id="mainPanel">

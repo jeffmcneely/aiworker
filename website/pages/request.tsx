@@ -146,12 +146,6 @@ export default function Request() {
 
   return (
     <Layout title="Image Generation Request" description="Generate AI images with custom prompts">
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-        <div style={{ flex: '1' }}>
-          <MetricsWidget />
-        </div>
-      </div>
-      
       <div className="request-form">
         <h2>Image Generation Request</h2>
         <form onSubmit={handleSubmit}>
@@ -278,6 +272,10 @@ export default function Request() {
               ))}
             </>
           )}
+        </div>
+        
+        <div style={{ marginTop: '16px' }}>
+          <MetricsWidget />
         </div>
       </div>
     </Layout>
