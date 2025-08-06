@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
+import MetricsWidget from '../components/MetricsWidget'
 
 interface JobItem {
   id: string
@@ -271,6 +272,10 @@ export default function Request() {
               ))}
             </>
           )}
+        </div>
+        
+        <div style={{ marginTop: '16px' }}>
+          <MetricsWidget />
         </div>
       </div>
     </Layout>

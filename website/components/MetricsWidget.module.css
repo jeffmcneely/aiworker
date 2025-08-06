@@ -1,0 +1,193 @@
+.widget {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  color: #f9fafb;
+  box-shadow: 0 2px 3px -1px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  max-width: 200px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #374151;
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.status {
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.hostSelector {
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #374151;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.hostSelector label {
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.hostSelect {
+  flex: 1;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 3px;
+  color: #f9fafb;
+  padding: 2px 4px;
+  font-size: 9px;
+  min-width: 0;
+}
+
+.hostSelect:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px #6366f1;
+}
+
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metricBar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metricLabel {
+  font-size: 10px;
+  font-weight: 500;
+  color: #d1d5db;
+}
+
+.barContainer {
+  background: #374151;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.barFill {
+  height: 100%;
+  transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+  border-radius: 2px;
+}
+
+.footer {
+  margin-top: 8px;
+  padding-top: 4px;
+  border-top: 1px solid #374151;
+  font-size: 9px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.error {
+  color: #fca5a5;
+  text-align: center;
+  padding: 8px 0;
+  font-size: 10px;
+}
+
+.loading {
+  color: #9ca3af;
+  text-align: center;
+  padding: 8px 0;
+  font-size: 10px;
+}
+
+/* Light theme support */
+@media (prefers-color-scheme: light) {
+  .widget {
+    background: #ffffff;
+    border-color: #e5e7eb;
+    color: #111827;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .header h3 {
+    color: #111827;
+  }
+
+  .header {
+    border-bottom-color: #e5e7eb;
+  }
+
+  .hostSelector {
+    border-bottom-color: #e5e7eb;
+  }
+
+  .hostSelector label {
+    color: #4b5563;
+  }
+
+  .hostSelect {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #111827;
+  }
+
+  .hostSelect:focus {
+    border-color: #6366f1;
+  }
+
+  .metricLabel {
+    color: #4b5563;
+  }
+
+  .barContainer {
+    background: #f3f4f6;
+  }
+
+  .footer {
+    border-top-color: #e5e7eb;
+    color: #6b7280;
+  }
+
+  .loading {
+    color: #6b7280;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .widget {
+    min-width: 120px;
+    padding: 6px;
+  }
+
+  .header h3 {
+    font-size: 11px;
+  }
+
+  .metricLabel {
+    font-size: 9px;
+  }
+
+  .barContainer {
+    height: 3px;
+  }
+}

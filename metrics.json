@@ -1,0 +1,88 @@
+{
+  "timestamp": "2025-08-03T17:40:15.952216+00:00Z",
+  "hostname": "9055226b5ae9",
+  "cpu": {
+    "usage_percent": 0.3,
+    "usage_per_core": [
+      2.0,
+      2.0,
+      0.0,
+      1.0,
+      0.0,
+      2.0,
+      3.0,
+      2.0
+    ],
+    "frequency": {
+      "current": 800.052375,
+      "min": 800.0,
+      "max": 4200.0
+    },
+    "count_logical": 8,
+    "count_physical": 4,
+    "temperatures": [
+      {
+        "sensor": "coretemp_Core 0",
+        "temperature": 26.0,
+        "high": 80.0,
+        "critical": 100.0
+      },
+      {
+        "sensor": "coretemp_Core 1",
+        "temperature": 27.0,
+        "high": 80.0,
+        "critical": 100.0
+      },
+      {
+        "sensor": "coretemp_Core 2",
+        "temperature": 26.0,
+        "high": 80.0,
+        "critical": 100.0
+      },
+      {
+        "sensor": "coretemp_Core 3",
+        "temperature": 25.0,
+        "high": 80.0,
+        "critical": 100.0
+      }
+    ]
+  },
+  "memory": {
+    "virtual": {
+      "total": 67366825984,
+      "available": 29715697664,
+      "used": 36571275264,
+      "percent": 55.9,
+      "free": 10854330368,
+      "active": 12712038400,
+      "inactive": 42487955456,
+      "buffers": 16539648,
+      "cached": 19924680704
+    },
+    "swap": {
+      "total": 107374178304,
+      "used": 35451568128,
+      "free": 71922610176,
+      "percent": 33.0
+    }
+  },
+  "gpu": [
+    {
+      "index": 0,
+      "name": "NVIDIA GeForce RTX 3080",
+      "memory": {
+        "total": 10737418240,
+        "used": 757202944,
+        "free": 9980215296,
+        "percent": 7.052001953125001
+      },
+      "utilization": {
+        "gpu": 0,
+        "memory": 0
+      },
+      "temperature": 40,
+      "power_usage_watts": 19.079,
+      "fan_speed_percent": 0
+    }
+  ]
+}
