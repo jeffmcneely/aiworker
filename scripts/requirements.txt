@@ -1,0 +1,8 @@
+# AWS SDK for Python (boto3)
+boto3>=1.34.0
+
+# HTTP requests library
+requests>=2.31.0
+
+# Type hints for boto3 (optional but recommended)
+boto3-stubs[essential]>=1.34.0

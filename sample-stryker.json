@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-08-06T03:03:16.999106+00:00Z",
+  "hostname": "stryker",
+  "cpu": {
+    "usage_percent": 45.2
+  },
+  "memory": {
+    "virtual": {
+      "percent": 68.5
+    },
+    "swap": {
+      "percent": 12.3
+    }
+  },
+  "gpu": [
+    {
+      "memory": {
+        "percent": 82.1
+      },
+      "temperature": 65.0
+    }
+  ]
+}

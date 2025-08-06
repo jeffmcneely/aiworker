@@ -32,6 +32,38 @@
   font-weight: 500;
 }
 
+.hostSelector {
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.hostSelector label {
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.hostSelect {
+  flex: 1;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  color: #f9fafb;
+  padding: 4px 8px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.hostSelect:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px #6366f1;
+}
+
 .metrics {
   display: flex;
   flex-direction: column;
@@ -102,6 +134,24 @@
 
   .header {
     border-bottom-color: #e5e7eb;
+  }
+
+  .hostSelector {
+    border-bottom-color: #e5e7eb;
+  }
+
+  .hostSelector label {
+    color: #4b5563;
+  }
+
+  .hostSelect {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #111827;
+  }
+
+  .hostSelect:focus {
+    border-color: #6366f1;
   }
 
   .metricLabel {

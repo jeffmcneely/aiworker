@@ -1,0 +1,57 @@
+# aiworker project shell configuration
+# Add this to your ~/.zshrc or source it manually
+
+# Function to quickly navigate to aiworker project
+function aiworker() {
+    cd /Users/jeffmc/aiworker
+    if [ -f "./activate.sh" ]; then
+        source ./activate.sh
+    fi
+}
+
+# Function to start aiworker development
+function aiworker-dev() {
+    cd /Users/jeffmc/aiworker
+    source ./activate.sh
+    cd website
+    npm run dev
+}
+
+# Function to build aiworker website
+function aiworker-build() {
+    cd /Users/jeffmc/aiworker
+    source ./activate.sh
+    cd website
+    npm run build
+}
+
+# Function to configure S3 CORS
+function aiworker-cors() {
+    cd /Users/jeffmc/aiworker
+    source ./activate.sh
+    python scripts/configure_s3_cors.py
+}
+
+# Function to test S3 CORS
+function aiworker-test-cors() {
+    cd /Users/jeffmc/aiworker
+    source ./activate.sh
+    python scripts/test_s3_cors.py
+}
+
+# Auto-completion for aiworker commands
+autoload -U compinit
+compinit
+
+# Direnv configuration (if installed)
+if command -v direnv >/dev/null 2>&1; then
+    eval "$(direnv hook zsh)"
+fi
+
+echo "🚀 aiworker shell functions loaded!"
+echo "Available commands:"
+echo "  aiworker          - Navigate to project and activate environment"
+echo "  aiworker-dev      - Start development server"
+echo "  aiworker-build    - Build website"
+echo "  aiworker-cors     - Configure S3 CORS"
+echo "  aiworker-test-cors - Test S3 CORS configuration"
