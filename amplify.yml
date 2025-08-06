@@ -8,6 +8,7 @@ applications:
         build:
           commands:
             - npm run build
+            - ls -la out/ # Debug: list the output directory
       artifacts:
         baseDirectory: out
         files:
@@ -17,12 +18,22 @@ applications:
           - .next/cache/**/*
           - .npm/**/*
       customHeaders:
+        - pattern: '/site.webmanifest'
+          headers:
+            - key: 'Content-Type'
+              value: 'application/manifest+json'
+            - key: 'Access-Control-Allow-Origin'
+              value: '*'
+            - key: 'Cache-Control'
+              value: 'public, max-age=3600'
         - pattern: '**/*.webmanifest'
           headers:
             - key: 'Content-Type'
               value: 'application/manifest+json'
             - key: 'Access-Control-Allow-Origin'
               value: '*'
+            - key: 'Cache-Control'
+              value: 'public, max-age=3600'
         - pattern: '**/*.xml'
           headers:
             - key: 'Content-Type'
