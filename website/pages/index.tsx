@@ -7,6 +7,13 @@ interface ImageData {
   filename: string
   url: string
   prompt: string | null
+  height: number | null
+  width: number | null
+  steps: number | null
+  seed: number | null
+  cfg: number | null
+  negativePrompt: string | null
+  model: string | null
   timestamp: string
   uuid: string
 }
@@ -98,6 +105,36 @@ export default function Home() {
                 {expandedImage.prompt}
               </div>
             )}
+            <div className="image-details-panel">
+              <div className="details-grid">
+                <div className="detail-item">
+                  <span className="detail-label">Model:</span>
+                  <span className="detail-value">{expandedImage.model || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Size:</span>
+                  <span className="detail-value">{expandedImage.width}×{expandedImage.height}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Steps:</span>
+                  <span className="detail-value">{expandedImage.steps || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">CFG:</span>
+                  <span className="detail-value">{expandedImage.cfg || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Seed:</span>
+                  <span className="detail-value">{expandedImage.seed || 'N/A'}</span>
+                </div>
+                {expandedImage.negativePrompt && (
+                  <div className="detail-item negative-prompt">
+                    <span className="detail-label">Negative Prompt:</span>
+                    <span className="detail-value">{expandedImage.negativePrompt}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </>
         )}
         <img

@@ -161,6 +161,7 @@ def receive_sqs_messages(queue_name):
             "cfg": tti_input.cfg,
             "steps": tti_input.steps,
             "model": tti_input.model,
+            "negativePrompt": tti_input.negativePrompt,
             "filename": tti_input.id + "." + ext,
             "status": "completed",
             "timestamp": int(time.time())
@@ -177,6 +178,26 @@ def receive_sqs_messages(queue_name):
             logger.debug(f"Uploaded final metadata to s3://{S3_BUCKET}/{final_json_key}")
         except Exception as e:
             logger.error(f"Failed to upload final metadata to S3: {e}")
+        
+        # Update the original request JSON with the actual seed used
+        if tti_input.seed == 0:
+            try:
+                original_json_key = f"{tti_input.id}.json"
+                # Read the original JSON
+                original_response = s3.get_object(Bucket=S3_BUCKET, Key=original_json_key)
+                original_data = json.loads(original_response['Body'].read())
+                # Update with actual seed
+                original_data['seed'] = seed
+                # Write back to S3
+                s3.put_object(
+                    Bucket=S3_BUCKET,
+                    Key=original_json_key,
+                    Body=json.dumps(original_data),
+                    ContentType='application/json'
+                )
+                logger.debug(f"Updated original request JSON with actual seed: {seed}")
+            except Exception as e:
+                logger.error(f"Failed to update original request JSON with seed: {e}")
 
 
 # Response: {'prompt_id': 'a3bf9763-4cf8-4aef-9d70-36d89d9d03d5', 'number': 0, 'node_errors': {}}

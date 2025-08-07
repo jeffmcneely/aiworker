@@ -94,8 +94,15 @@ async function getRecentS3FileUrls(bucketName, region = process.env.AWS_REGION, 
         
         // Get base filename without extension and read corresponding JSON
         const baseFilename = obj.Key.replace(/\.[^/.]+$/, "");
-        const jsonKey = `${baseFilename}.json`;
+        const jsonKey = `${baseFilename}_final.json`;
         let prompt = null;
+        let height = null;
+        let width = null;
+        let steps = null;
+        let seed = null;
+        let cfg = null;
+        let negativePrompt = null;
+        let model = null;
         
         try {
           const jsonResponse = await s3Client.send(new GetObjectCommand({
@@ -105,6 +112,13 @@ async function getRecentS3FileUrls(bucketName, region = process.env.AWS_REGION, 
           const jsonContent = await jsonResponse.Body.transformToString();
           const jsonData = JSON.parse(jsonContent);
           prompt = jsonData.prompt || null;
+          height = jsonData.height || null;
+          width = jsonData.width || null;
+          steps = jsonData.steps || null;
+          seed = jsonData.seed || null;
+          cfg = jsonData.cfg || null;
+          negativePrompt = jsonData.negativePrompt || null;
+          model = jsonData.model || null;
         } catch (err) {
           console.log(`No JSON file found for ${jsonKey} or error reading it:`, err.message);
         }
@@ -113,6 +127,13 @@ async function getRecentS3FileUrls(bucketName, region = process.env.AWS_REGION, 
           filename: obj.Key,
           url: url,
           prompt: prompt,
+          height: height,
+          width: width,
+          steps: steps,
+          seed: seed,
+          cfg: cfg,
+          negativePrompt: negativePrompt,
+          model: model,
           timestamp: obj.LastModified,
           uuid: baseFilename
         };
