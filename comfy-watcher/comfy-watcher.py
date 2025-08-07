@@ -107,7 +107,7 @@ def receive_sqs_messages(queue_name):
                 workflow["11"]["inputs"]["height"] = tti_input.height
                 workflow["11"]["inputs"]["width"] = tti_input.width
                 #workflow["23"]["inputs"]["steps"] = tti_input.steps
-                workflow["3"]["inputs"]["seed"] = seed
+                workflow["21"]["inputs"]["seed"] = seed
                 workflow["7"]["inputs"]["text"] = tti_input.negativePrompt
         prompt = {"prompt": workflow}
         data = json.dumps(prompt).encode("utf-8")
