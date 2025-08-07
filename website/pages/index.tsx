@@ -14,6 +14,7 @@ interface ImageData {
   cfg: number | null
   negativePrompt: string | null
   model: string | null
+  elapsed: number | null
   timestamp: string
   uuid: string
 }
@@ -126,6 +127,10 @@ export default function Home() {
                 <div className="detail-item">
                   <span className="detail-label">Seed:</span>
                   <span className="detail-value">{expandedImage.seed || 'N/A'}</span>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">Generation Time:</span>
+                  <span className="detail-value">{expandedImage.elapsed ? `${expandedImage.elapsed}s` : 'N/A'}</span>
                 </div>
                 {expandedImage.negativePrompt && (
                   <div className="detail-item negative-prompt">

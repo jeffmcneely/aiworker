@@ -118,8 +118,13 @@ def receive_sqs_messages(queue_name):
             headers={"Content-Type": "application/json"},
             data=data,
         )
+        
+        # Measure time for polling ComfyUI history
+        poll_start_time = time.time()
         poll_response = poll_comfyui_history(response.json().get("prompt_id"))
+        poll_elapsed = time.time() - poll_start_time
         logger.debug(f"Poll response: {poll_response}")
+        logger.info(f"ComfyUI polling completed in {poll_elapsed:.2f} seconds")
         
         # Upload poll_response to S3 as JSON using the message ID
         output_json_key = f"{tti_input.id}_output.json"
@@ -164,7 +169,8 @@ def receive_sqs_messages(queue_name):
             "negativePrompt": tti_input.negativePrompt,
             "filename": tti_input.id + "." + ext,
             "status": "completed",
-            "timestamp": int(time.time())
+            "timestamp": int(time.time()),
+            "elapsed": round(poll_elapsed, 2)
         }
         
         final_json_key = f"{tti_input.id}_final.json"
