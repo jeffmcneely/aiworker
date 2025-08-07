@@ -220,7 +220,7 @@ def main():
     else:
         while True:
             receive_sqs_messages(QUEUE_NAME)
-            time.sleep(1)
+            time.sleep(2)
 
 
 # Utility to look up SQS URL by queue name
