@@ -7,7 +7,7 @@ const nextConfig = {
     unoptimized: true,
   },
   env: {
-    NEXT_PUBLIC_METRICS_URL: process.env.NEXT_PUBLIC_METRICS_URL,
+    METRICS_BUCKET_BASE: process.env.METRICS_BUCKET_BASE,
   },
 }
 
