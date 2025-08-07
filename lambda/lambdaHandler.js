@@ -94,7 +94,7 @@ async function getRecentS3FileUrls(bucketName, region = process.env.AWS_REGION, 
         
         // Get base filename without extension and read corresponding JSON
         const baseFilename = obj.Key.replace(/\.[^/.]+$/, "");
-        const jsonKey = `${baseFilename}_final.json`;
+        const jsonKey = `${baseFilename}.json`;
         let prompt = null;
         let height = null;
         let width = null;
