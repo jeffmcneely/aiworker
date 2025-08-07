@@ -249,6 +249,7 @@ export default function Request() {
                 value={formData.seed}
                 min="0"
                 max="9007199254740991"
+                style={{ width: '200px' }}
                 onChange={handleInputChange}
               />
             </label>
@@ -259,7 +260,7 @@ export default function Request() {
                 checked={formData.regenerateSeed}
                 onChange={handleInputChange}
               />
-              regenerate seed
+              regenerate
             </label>
           </div>
           
