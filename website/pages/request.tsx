@@ -179,7 +179,7 @@ export default function Request() {
         <h2>Image Generation Request</h2>
         <form onSubmit={handleSubmit}>
           <label>
-            Model:
+            <span>Model:</span>
             <select name="model" value={formData.model} onChange={handleInputChange}>
               <option value="flux">flux</option>
               <option value="hidream">hidream</option>
@@ -188,7 +188,7 @@ export default function Request() {
           </label>
           
           <label>
-            Height:
+            <span>Height:</span>
             <input
               type="number"
               name="height"
@@ -201,7 +201,7 @@ export default function Request() {
           </label>
           
           <label>
-            Width:
+            <span>Width:</span>
             <input
               type="number"
               name="width"
@@ -214,7 +214,7 @@ export default function Request() {
           </label>
           
           <label>
-            Steps:
+            <span>Steps:</span>
             <input
               type="number"
               name="steps"
@@ -227,7 +227,7 @@ export default function Request() {
           </label>
           
           <label title="Prompt adherence - higher values make the AI follow the prompt more closely">
-            CFG:
+            <span>CFG:</span>
             <input
               type="number"
               name="cfg"
@@ -241,8 +241,8 @@ export default function Request() {
           </label>
           
           <div className="seed-container">
-            <label>
-              Seed:
+            <label title="Random number seed for reproducible results - use 0 for random generation">
+              <span>Seed:</span>
               <input
                 type="number"
                 name="seed"
@@ -264,7 +264,7 @@ export default function Request() {
           </div>
           
           <label>
-            Prompt:
+            <span>Prompt:</span>
             <textarea
               name="prompt"
               value={formData.prompt}
@@ -275,7 +275,7 @@ export default function Request() {
           </label>
           
           <label>
-            Negative Prompt:
+            <span>Negative Prompt:</span>
             <textarea
               name="negativePrompt"
               value={formData.negativePrompt}
