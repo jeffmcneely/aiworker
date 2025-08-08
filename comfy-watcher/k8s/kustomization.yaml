@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: comfy-watcher
+
+resources:
+- namespace.yaml
+- configmap.yaml
+- storage.yaml
+- rbac.yaml
+- comfyui.yaml
+- comfy-watcher.yaml
+- hpa.yaml
+- network-policy.yaml
+
+# Patches to customize for your environment
+patchesStrategicMerge:
+- patches/production.yaml
+
+# Images to be used
+images:
+- name: comfy-watcher
+  newName: your-registry/comfy-watcher
+  newTag: latest
+
+# ConfigMap generator for environment-specific configs
+configMapGenerator:
+- name: comfy-watcher-config
+  envs:
+  - configs/production.env
+  behavior: replace
+
+# Secret generator for AWS credentials
+secretGenerator:
+- name: aws-credentials
+  envs:
+  - secrets/aws.env
+  type: Opaque
+  behavior: replace

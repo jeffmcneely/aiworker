@@ -1,0 +1,81 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comfy-watcher-netpol
+  namespace: comfy-watcher
+spec:
+  podSelector:
+    matchLabels:
+      app: comfy-watcher
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []  # No ingress traffic needed for comfy-watcher
+  egress:
+  # Allow communication to ComfyUI service
+  - to:
+    - podSelector:
+        matchLabels:
+          app: comfyui
+    ports:
+    - protocol: TCP
+      port: 8188
+  # Allow AWS API calls (HTTPS)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comfyui-netpol
+  namespace: comfy-watcher
+spec:
+  podSelector:
+    matchLabels:
+      app: comfyui
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from comfy-watcher
+  - from:
+    - podSelector:
+        matchLabels:
+          app: comfy-watcher
+    ports:
+    - protocol: TCP
+      port: 8188
+  # Allow traffic from ingress controllers (if exposing externally)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8188
+  egress:
+  # Allow downloading models and updates
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53

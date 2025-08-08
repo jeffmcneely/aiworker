@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comfy-watcher
+  namespace: comfy-watcher
+spec:
+  replicas: 2  # Scale up for production
+  template:
+    spec:
+      containers:
+      - name: comfy-watcher
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comfyui
+  namespace: comfy-watcher
+spec:
+  template:
+    spec:
+      containers:
+      - name: comfyui
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "16Gi"
+            cpu: "8000m"
