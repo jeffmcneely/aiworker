@@ -18,14 +18,65 @@ log_level = logging.DEBUG if os.environ.get("LOG_LEVEL") == "DEBUG" else logging
 logging.basicConfig(level=log_level, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+# Function to read Docker secrets
+def read_secret(secret_path):
+    """Read secret from file path, fallback to environment variable"""
+    try:
+        with open(secret_path, 'r') as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        logger.warning(f"Secret file not found: {secret_path}")
+        return None
+
+# AWS Configuration - support both secrets and env vars
+def get_aws_credentials():
+    # Try to read from Docker secrets first
+    access_key_file = os.getenv("COMFY_AWS_ACCESS_KEY_ID_FILE")
+    secret_key_file = os.getenv("COMFY_AWS_SECRET_ACCESS_KEY_FILE")
+    
+    if access_key_file and secret_key_file:
+        access_key = read_secret(access_key_file)
+        secret_key = read_secret(secret_key_file)
+        if access_key and secret_key:
+            return access_key, secret_key
+    
+    # Fallback to environment variables
+    access_key = os.getenv("COMFY_AWS_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
+    secret_key = os.getenv("COMFY_AWS_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
+    
+    return access_key, secret_key
+
+# Get AWS credentials
+aws_access_key_id, aws_secret_access_key = get_aws_credentials()
+
 # S3 Watcher config
-S3_BUCKET = os.environ.get("AWS_S3_BUCKET")
+S3_BUCKET = os.getenv("COMFY_AWS_S3_BUCKET") or os.getenv("AWS_S3_BUCKET")
 
 # SQS config
-QUEUE_NAME = os.getenv("AWS_SQS_NAME", "")
+QUEUE_NAME = os.getenv("COMFY_AWS_SQS_NAME") or os.getenv("AWS_SQS_NAME", "")
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "output")
-s3 = boto3.client("s3")
-sqs = boto3.client("sqs")
+
+# ComfyUI config
+COMFY_HOST = os.getenv("COMFY_HOST", "127.0.0.1")
+COMFY_PORT = os.getenv("COMFY_PORT", "8188")
+POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2"))
+
+# AWS Region
+AWS_REGION = os.getenv("COMFY_AWS_DEFAULT_REGION") or os.getenv("AWS_DEFAULT_REGION", "us-west-2")
+
+# Initialize AWS clients with explicit credentials
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=aws_access_key_id,
+    aws_secret_access_key=aws_secret_access_key,
+    region_name=AWS_REGION
+)
+sqs = boto3.client(
+    "sqs",
+    aws_access_key_id=aws_access_key_id,
+    aws_secret_access_key=aws_secret_access_key,
+    region_name=AWS_REGION
+)
 
 
 class TTI_input:
@@ -109,12 +160,24 @@ def receive_sqs_messages(queue_name):
                 #workflow["23"]["inputs"]["steps"] = tti_input.steps
                 workflow["21"]["inputs"]["noise_seed"] = seed
                 workflow["7"]["inputs"]["text"] = tti_input.negativePrompt
+            case "sd3.5":
+                workflow["16"]["inputs"]["text"] = tti_input.prompt
+                workflow["40"]["inputs"]["text"] = tti_input.negativePrompt
+                workflow["53"]["inputs"]["width"] = tti_input.width
+                workflow["53"]["inputs"]["height"] = tti_input.height
+                workflow["53"]["inputs"]["batch_size"] = 1
+                workflow["3"]["inputs"]["seed"] = seed
+                workflow["3"]["inputs"]["steps"] = tti_input.steps
+                workflow["3"]["inputs"]["cfg"] = tti_input.cfg
+                if "negative_prompt" in workflow.get("71", {}).get("inputs", {}):
+                    workflow["71"]["inputs"]["text"] = tti_input.negativePrompt
         prompt = {"prompt": workflow}
         data = json.dumps(prompt).encode("utf-8")
         logger.info(f"using prompt: {tti_input.prompt}")
         logger.debug(f"Sending workflow to ComfyUI: {data}")
+        comfy_url = f"http://{COMFY_HOST}:{COMFY_PORT}/prompt"
         response = requests.post(
-            "http://localhost:8188/prompt",
+            comfy_url,
             headers={"Content-Type": "application/json"},
             data=data,
         )
@@ -220,7 +283,7 @@ def main():
     else:
         while True:
             receive_sqs_messages(QUEUE_NAME)
-            time.sleep(2)
+            time.sleep(POLL_INTERVAL)
 
 
 # Utility to look up SQS URL by queue name
@@ -262,7 +325,9 @@ def insert_seed_uuid_exif(image_path, seed, uuid):
         logger.info("Image does not contain EXIF data or ImageDescription tag.")
 
 
-def poll_comfyui_history(prompt_id, base_url="http://127.0.0.1:8188/history/") -> dict:
+def poll_comfyui_history(prompt_id, base_url=None) -> dict:
+    if base_url is None:
+        base_url = f"http://{COMFY_HOST}:{COMFY_PORT}/history/"
     url = base_url + str(prompt_id)
     delay = 1
     for i in range(600):

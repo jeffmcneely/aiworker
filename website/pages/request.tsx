@@ -184,6 +184,7 @@ export default function Request() {
               <option value="flux">flux</option>
               <option value="hidream">hidream</option>
               <option value="omnigen">omnigen</option>
+              <option value="sd3.5">sd3.5</option>
             </select>
           </label>
           

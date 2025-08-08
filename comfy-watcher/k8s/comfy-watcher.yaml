@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comfy-watcher
+  namespace: comfy-watcher
+  labels:
+    app: comfy-watcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: comfy-watcher
+  template:
+    metadata:
+      labels:
+        app: comfy-watcher
+    spec:
+      containers:
+      - name: comfy-watcher
+        image: comfy-watcher:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        # AWS Credentials from Secret
+        - name: COMFY_AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: COMFY_AWS_ACCESS_KEY_ID
+        - name: COMFY_AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: COMFY_AWS_SECRET_ACCESS_KEY
+        # Configuration from ConfigMap
+        - name: COMFY_AWS_DEFAULT_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: comfy-watcher-config
+              key: COMFY_AWS_DEFAULT_REGION
+        - name: COMFY_AWS_S3_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: comfy-watcher-config
+              key: COMFY_AWS_S3_BUCKET
+        - name: COMFY_AWS_SQS_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: comfy-watcher-config
+              key: COMFY_AWS_SQS_NAME
+        - name: COMFY_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: comfy-watcher-config
+              key: COMFY_HOST
+        - name: COMFY_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: comfy-watcher-config
+              key: COMFY_PORT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: comfy-watcher-config
+              key: LOG_LEVEL
+        - name: POLL_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: comfy-watcher-config
+              key: POLL_INTERVAL
+        - name: OUTPUT_FOLDER
+          valueFrom:
+            configMapKeyRef:
+              name: comfy-watcher-config
+              key: OUTPUT_FOLDER
+        volumeMounts:
+        - name: comfy-output
+          mountPath: /app/output
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import requests; requests.get(f'http://{os.environ[\"COMFY_HOST\"]}:{os.environ[\"COMFY_PORT\"]}/system_stats')"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+      volumes:
+      - name: comfy-output
+        persistentVolumeClaim:
+          claimName: comfy-output-pvc
+      restartPolicy: Always

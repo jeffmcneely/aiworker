@@ -169,24 +169,90 @@ const requestImage = async (event) => {
   const s3Client = new S3Client({ region: process.env.AWS_REGION });
   const { height, width, steps, seed, cfg, prompt, negativePrompt, model } = JSON.parse(event.body || '{}');
 
-  // Input validation
-  if (
-    typeof height !== 'number' || height > 1024 ||
-    typeof width !== 'number' || width > 1024 ||
-    typeof steps !== 'number' || steps > 100 ||
-    typeof seed !== 'number' || seed < 0 ||
-    typeof cfg !== 'number' || cfg < 0 || cfg > 10 ||
-    typeof prompt !== 'string' || prompt.length > 10000 ||
-    (negativePrompt && typeof negativePrompt !== 'string') || (negativePrompt && negativePrompt.length > 10000) ||
-    (model !== 'hidream' && model !== 'flux' && model !== 'omnigen')
-  ) {
+  // Input validation with specific error messages
+  const errors = [];
+
+  // Height validation
+  if (typeof height !== 'number') {
+    errors.push('Height must be a number');
+  } else if (height <= 0) {
+    errors.push('Height must be greater than 0');
+  } else if (height > 1024) {
+    errors.push('Height must not exceed 1024 pixels');
+  }
+
+  // Width validation
+  if (typeof width !== 'number') {
+    errors.push('Width must be a number');
+  } else if (width <= 0) {
+    errors.push('Width must be greater than 0');
+  } else if (width > 1024) {
+    errors.push('Width must not exceed 1024 pixels');
+  }
+
+  // Steps validation
+  if (typeof steps !== 'number') {
+    errors.push('Steps must be a number');
+  } else if (steps <= 0) {
+    errors.push('Steps must be greater than 0');
+  } else if (steps > 100) {
+    errors.push('Steps must not exceed 100');
+  }
+
+  // Seed validation
+  if (typeof seed !== 'number') {
+    errors.push('Seed must be a number');
+  } else if (seed < 0) {
+    errors.push('Seed must be 0 or greater (use 0 for random)');
+  }
+
+  // CFG validation
+  if (typeof cfg !== 'number') {
+    errors.push('CFG must be a number');
+  } else if (cfg < 0) {
+    errors.push('CFG must be 0 or greater');
+  } else if (cfg > 10) {
+    errors.push('CFG must not exceed 10');
+  }
+
+  // Prompt validation
+  if (typeof prompt !== 'string') {
+    errors.push('Prompt must be a string');
+  } else if (prompt.trim().length === 0) {
+    errors.push('Prompt cannot be empty');
+  } else if (prompt.length > 10000) {
+    errors.push('Prompt must not exceed 10,000 characters');
+  }
+
+  // Negative prompt validation
+  if (negativePrompt !== null && negativePrompt !== undefined) {
+    if (typeof negativePrompt !== 'string') {
+      errors.push('Negative prompt must be a string');
+    } else if (negativePrompt.length > 10000) {
+      errors.push('Negative prompt must not exceed 10,000 characters');
+    }
+  }
+
+  // Model validation
+  const validModels = ['hidream', 'flux', 'omnigen', 'sd3.5'];
+  if (typeof model !== 'string') {
+    errors.push('Model must be a string');
+  } else if (!validModels.includes(model)) {
+    errors.push(`Model must be one of: ${validModels.join(', ')}`);
+  }
+
+  // Return validation errors if any
+  if (errors.length > 0) {
     return {
       statusCode: 400,
       headers: { 
         'Content-Type': 'application/json',
         ...corsHeaders
       },
-      body: JSON.stringify({ error: 'Invalid input: height and width must be <= 1024, steps <= 100, seed must be >= 0, cfg must be 0-10, prompt length < 10000, negative prompt length < 10000, model must be hidream, flux, or omnigen.' }),
+      body: JSON.stringify({ 
+        error: 'Validation failed',
+        details: errors
+      }),
     };
   }
 
