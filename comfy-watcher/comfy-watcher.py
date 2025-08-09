@@ -49,11 +49,29 @@ def get_aws_credentials():
 # Get AWS credentials
 aws_access_key_id, aws_secret_access_key = get_aws_credentials()
 
+# Function to get S3 bucket (support secrets and env vars)
+def get_s3_bucket():
+    bucket_file = os.getenv("COMFY_AWS_S3_BUCKET_FILE")
+    if bucket_file:
+        bucket = read_secret(bucket_file)
+        if bucket:
+            return bucket
+    return os.getenv("COMFY_AWS_S3_BUCKET") or os.getenv("AWS_S3_BUCKET")
+
+# Function to get SQS queue name (support secrets and env vars)
+def get_sqs_queue_name():
+    queue_file = os.getenv("COMFY_AWS_SQS_NAME_FILE")
+    if queue_file:
+        queue = read_secret(queue_file)
+        if queue:
+            return queue
+    return os.getenv("COMFY_AWS_SQS_NAME") or os.getenv("AWS_SQS_NAME", "")
+
 # S3 Watcher config
-S3_BUCKET = os.getenv("COMFY_AWS_S3_BUCKET") or os.getenv("AWS_S3_BUCKET")
+S3_BUCKET = get_s3_bucket()
 
 # SQS config
-QUEUE_NAME = os.getenv("COMFY_AWS_SQS_NAME") or os.getenv("AWS_SQS_NAME", "")
+QUEUE_NAME = get_sqs_queue_name()
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "output")
 
 # ComfyUI config

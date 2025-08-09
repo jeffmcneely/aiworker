@@ -7,9 +7,9 @@ services:
       # AWS Configuration
       - COMFY_AWS_ACCESS_KEY_ID_FILE=/run/secrets/comfy_aws_access_key_id
       - COMFY_AWS_SECRET_ACCESS_KEY_FILE=/run/secrets/comfy_aws_secret_access_key
+      - COMFY_AWS_S3_BUCKET_FILE=/run/secrets/comfy_aws_s3_bucket
+      - COMFY_AWS_SQS_NAME_FILE=/run/secrets/comfy_aws_sqs_name
       - COMFY_AWS_DEFAULT_REGION=${COMFY_AWS_DEFAULT_REGION:-us-west-2}
-      - COMFY_AWS_S3_BUCKET=${COMFY_AWS_S3_BUCKET}
-      - COMFY_AWS_SQS_NAME=${COMFY_AWS_SQS_NAME}
       
       # ComfyUI Configuration
       - COMFY_HOST=${COMFY_HOST:-comfyui}
@@ -24,6 +24,8 @@ services:
     secrets:
       - comfy_aws_access_key_id
       - comfy_aws_secret_access_key
+      - comfy_aws_s3_bucket
+      - comfy_aws_sqs_name
     depends_on:
       - comfyui
     restart: unless-stopped
@@ -57,3 +59,7 @@ secrets:
     file: ./secrets/aws_access_key_id.txt
   comfy_aws_secret_access_key:
     file: ./secrets/aws_secret_access_key.txt
+  comfy_aws_s3_bucket:
+    file: ./secrets/aws_s3_bucket.txt
+  comfy_aws_sqs_name:
+    file: ./secrets/aws_sqs_name.txt
