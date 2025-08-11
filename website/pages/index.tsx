@@ -23,6 +23,7 @@ export default function Home() {
   const [imageUrls, setImageUrls] = useState<ImageData[]>([])
   const [lastImageFilenames, setLastImageFilenames] = useState<string[] | null>(null)
   const [expandedImage, setExpandedImage] = useState<ImageData | null>(null)
+  const [detailsCollapsed, setDetailsCollapsed] = useState<boolean>(false)
 
   const fetchImageUrls = async (): Promise<ImageData[]> => {
     try {
@@ -63,6 +64,10 @@ export default function Home() {
     setExpandedImage(null)
   }
 
+  const toggleDetailsPanel = () => {
+    setDetailsCollapsed(!detailsCollapsed)
+  }
+
   return (
     <Layout title="Image Gallery" description="Browse AI generated images">
       <div className="sidebar" id="sidebar">
@@ -99,55 +104,178 @@ export default function Home() {
       
       <div className="main-panel" id="mainPanel">
         {expandedImage && (
-          <>
-            <div className="image-title">{expandedImage.filename}</div>
-            {expandedImage.prompt && (
-              <div className="image-prompt" style={{ display: 'block' }}>
-                {expandedImage.prompt}
-              </div>
-            )}
-            <div className="image-details-panel">
-              <div className="details-grid">
-                <div className="detail-item">
-                  <span className="detail-label">Model:</span>
-                  <span className="detail-value">{expandedImage.model || 'N/A'}</span>
+          <div className="image-viewer-container" style={{ 
+            display: 'flex', 
+            height: '100%', 
+            gap: '20px',
+            padding: '20px'
+          }}>
+            {/* Image Section */}
+            <div className="image-section" style={{ 
+              flex: detailsCollapsed ? '1' : '0 0 70%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'flex 0.3s ease-in-out'
+            }}>
+              <img
+                className="expanded-image"
+                src={expandedImage.url}
+                alt="Expanded"
+                onClick={handleExpandedImageClick}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                  cursor: 'pointer'
+                }}
+              />
+            </div>
+            
+            {/* Details Panel */}
+            <div className="details-panel-container" style={{
+              flex: detailsCollapsed ? '0 0 auto' : '0 0 30%',
+              minWidth: detailsCollapsed ? '200px' : '300px',
+              transition: 'all 0.3s ease-in-out',
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              borderRadius: '8px',
+              padding: '16px',
+              height: 'fit-content',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}>
+              {/* Header - Always Visible */}
+              <div 
+                className="details-header" 
+                onClick={toggleDetailsPanel} 
+                style={{ 
+                  cursor: 'pointer', 
+                  userSelect: 'none',
+                  borderBottom: detailsCollapsed ? 'none' : '1px solid rgba(255, 255, 255, 0.2)',
+                  paddingBottom: detailsCollapsed ? '0' : '12px',
+                  marginBottom: detailsCollapsed ? '0' : '12px'
+                }}
+              >
+                <div className="image-title" style={{ 
+                  color: 'white', 
+                  fontSize: '16px', 
+                  fontWeight: 'bold',
+                  marginBottom: '8px'
+                }}>
+                  {expandedImage.filename}
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">Size:</span>
-                  <span className="detail-value">{expandedImage.width}×{expandedImage.height}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Steps:</span>
-                  <span className="detail-value">{expandedImage.steps || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">CFG:</span>
-                  <span className="detail-value">{expandedImage.cfg || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Seed:</span>
-                  <span className="detail-value">{expandedImage.seed || 'N/A'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Generation Time:</span>
-                  <span className="detail-value">{expandedImage.elapsed ? `${expandedImage.elapsed}s` : 'N/A'}</span>
-                </div>
-                {expandedImage.negativePrompt && (
-                  <div className="detail-item negative-prompt">
-                    <span className="detail-label">Negative Prompt:</span>
-                    <span className="detail-value">{expandedImage.negativePrompt}</span>
+                {expandedImage.prompt && (
+                  <div className="image-prompt" style={{ 
+                    color: '#ccc', 
+                    fontSize: '14px',
+                    lineHeight: '1.4',
+                    marginBottom: '8px'
+                  }}>
+                    {expandedImage.prompt}
                   </div>
                 )}
+                <div className="collapse-indicator" style={{ 
+                  fontSize: '12px', 
+                  opacity: 0.7,
+                  color: '#888',
+                  textAlign: 'center'
+                }}>
+                  {detailsCollapsed ? '▶ Show Details' : '▼ Hide Details'}
+                </div>
+              </div>
+              
+              {/* Expandable Details */}
+              <div 
+                className="details-content"
+                style={{
+                  overflow: 'hidden',
+                  maxHeight: detailsCollapsed ? '0' : '1000px',
+                  opacity: detailsCollapsed ? 0 : 1,
+                  transition: 'max-height 0.4s ease-in-out, opacity 0.3s ease-in-out',
+                  transform: detailsCollapsed ? 'translateY(-10px)' : 'translateY(0)',
+                }}
+              >
+                <div className="details-grid" style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr',
+                  gap: '12px',
+                  paddingTop: '4px'
+                }}>
+                  <div className="detail-item" style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    color: 'white',
+                    fontSize: '14px'
+                  }}>
+                    <span className="detail-label" style={{ color: '#aaa' }}>Model:</span>
+                    <span className="detail-value">{expandedImage.model || 'N/A'}</span>
+                  </div>
+                  <div className="detail-item" style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    color: 'white',
+                    fontSize: '14px'
+                  }}>
+                    <span className="detail-label" style={{ color: '#aaa' }}>Size:</span>
+                    <span className="detail-value">{expandedImage.width}×{expandedImage.height}</span>
+                  </div>
+                  <div className="detail-item" style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    color: 'white',
+                    fontSize: '14px'
+                  }}>
+                    <span className="detail-label" style={{ color: '#aaa' }}>Steps:</span>
+                    <span className="detail-value">{expandedImage.steps || 'N/A'}</span>
+                  </div>
+                  <div className="detail-item" style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    color: 'white',
+                    fontSize: '14px'
+                  }}>
+                    <span className="detail-label" style={{ color: '#aaa' }}>CFG:</span>
+                    <span className="detail-value">{expandedImage.cfg || 'N/A'}</span>
+                  </div>
+                  <div className="detail-item" style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    color: 'white',
+                    fontSize: '14px'
+                  }}>
+                    <span className="detail-label" style={{ color: '#aaa' }}>Seed:</span>
+                    <span className="detail-value">{expandedImage.seed || 'N/A'}</span>
+                  </div>
+                  <div className="detail-item" style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    color: 'white',
+                    fontSize: '14px'
+                  }}>
+                    <span className="detail-label" style={{ color: '#aaa' }}>Generation Time:</span>
+                    <span className="detail-value">{expandedImage.elapsed ? `${expandedImage.elapsed}s` : 'N/A'}</span>
+                  </div>
+                  {expandedImage.negativePrompt && (
+                    <div className="detail-item negative-prompt" style={{
+                      gridColumn: '1 / -1',
+                      color: 'white',
+                      fontSize: '14px'
+                    }}>
+                      <div style={{ color: '#aaa', marginBottom: '4px' }}>Negative Prompt:</div>
+                      <div style={{ 
+                        color: '#ddd',
+                        lineHeight: '1.4',
+                        fontSize: '13px'
+                      }}>
+                        {expandedImage.negativePrompt}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </>
+          </div>
         )}
-        <img
-          className={`expanded-image ${expandedImage ? 'visible' : ''}`}
-          src={expandedImage?.url || ''}
-          alt="Expanded"
-          onClick={handleExpandedImageClick}
-        />
       </div>
     </Layout>
   )
