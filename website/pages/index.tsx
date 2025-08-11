@@ -130,7 +130,8 @@ export default function Home() {
                   maxHeight: '100%',
                   objectFit: 'contain',
                   cursor: 'pointer',
-                  display: 'block'
+                  display: 'block',
+                  opacity: 1
                 }}
                 onLoad={() => console.log('Image loaded successfully')}
                 onError={(e) => console.error('Image failed to load:', e)}
@@ -201,9 +202,8 @@ export default function Home() {
                     paddingBottom: '12px',
                     borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
                   }}>
-                    <div style={{ color: '#aaa', marginBottom: '4px' }}>Prompt:</div>
-                    <div style={{ 
-                      color: '#ddd',
+                    <div className="detail-label" style={{ marginBottom: '4px' }}>Prompt:</div>
+                    <div className="detail-value" style={{ 
                       lineHeight: '1.4',
                       fontSize: '13px'
                     }}>
@@ -278,9 +278,8 @@ export default function Home() {
                       color: 'white',
                       fontSize: '14px'
                     }}>
-                      <div style={{ color: '#aaa', marginBottom: '4px' }}>Negative Prompt:</div>
-                      <div style={{ 
-                        color: '#ddd',
+                      <div className="detail-label" style={{ marginBottom: '4px' }}>Negative Prompt:</div>
+                      <div className="detail-value" style={{ 
                         lineHeight: '1.4',
                         fontSize: '13px'
                       }}>

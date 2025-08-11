@@ -234,12 +234,11 @@ body {
     font-weight: 600;
     color: #666;
     font-size: 11px;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .detail-value {
-    color: #333;
+    color: #fff;
     font-weight: 500;
     word-break: break-word;
 }
