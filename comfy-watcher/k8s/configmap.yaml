@@ -7,6 +7,8 @@ type: Opaque
 stringData:
   COMFY_AWS_ACCESS_KEY_ID: "your-access-key-id"
   COMFY_AWS_SECRET_ACCESS_KEY: "your-secret-access-key"
+  COMFY_AWS_S3_BUCKET: "your-s3-bucket-name"
+  COMFY_AWS_SQS_NAME: "your-sqs-queue-name"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -15,8 +17,6 @@ metadata:
   namespace: comfy-watcher
 data:
   COMFY_AWS_DEFAULT_REGION: "us-west-2"
-  COMFY_AWS_S3_BUCKET: "your-s3-bucket-name"
-  COMFY_AWS_SQS_NAME: "your-sqs-queue-name"
   COMFY_HOST: "comfyui-service"
   COMFY_PORT: "8188"
   LOG_LEVEL: "INFO"

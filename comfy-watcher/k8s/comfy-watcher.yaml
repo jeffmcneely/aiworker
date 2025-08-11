@@ -31,22 +31,22 @@ spec:
             secretKeyRef:
               name: aws-credentials
               key: COMFY_AWS_SECRET_ACCESS_KEY
+        - name: COMFY_AWS_S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: COMFY_AWS_S3_BUCKET
+        - name: COMFY_AWS_SQS_NAME
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: COMFY_AWS_SQS_NAME
         # Configuration from ConfigMap
         - name: COMFY_AWS_DEFAULT_REGION
           valueFrom:
             configMapKeyRef:
               name: comfy-watcher-config
               key: COMFY_AWS_DEFAULT_REGION
-        - name: COMFY_AWS_S3_BUCKET
-          valueFrom:
-            configMapKeyRef:
-              name: comfy-watcher-config
-              key: COMFY_AWS_S3_BUCKET
-        - name: COMFY_AWS_SQS_NAME
-          valueFrom:
-            configMapKeyRef:
-              name: comfy-watcher-config
-              key: COMFY_AWS_SQS_NAME
         - name: COMFY_HOST
           valueFrom:
             configMapKeyRef:

@@ -21,9 +21,17 @@ logger = logging.getLogger(__name__)
 # Function to read Docker secrets
 def read_secret(secret_path):
     """Read secret from file path, fallback to environment variable"""
+    logger.debug(f"Attempting to read secret from: {secret_path}")
     try:
         with open(secret_path, 'r') as f:
-            return f.read().strip()
+            value = f.read().strip()
+            # Log only the first 6 and last 2 characters for safety
+            if value:
+                safe_value = value[:6] + ("..." if len(value) > 8 else "") + value[-2:]
+            else:
+                safe_value = "<empty>"
+            logger.debug(f"Successfully read secret from {secret_path}: {safe_value}")
+            return value
     except FileNotFoundError:
         logger.warning(f"Secret file not found: {secret_path}")
         return None
@@ -31,29 +39,59 @@ def read_secret(secret_path):
 # AWS Configuration - support both secrets and env vars
 def get_aws_credentials():
     # Try to read from Docker secrets first
+    logger.debug("Getting AWS credentials...")
     access_key_file = os.getenv("COMFY_AWS_ACCESS_KEY_ID_FILE")
     secret_key_file = os.getenv("COMFY_AWS_SECRET_ACCESS_KEY_FILE")
-    
+    logger.debug(f"COMFY_AWS_ACCESS_KEY_ID_FILE: {access_key_file}")
+    logger.debug(f"COMFY_AWS_SECRET_ACCESS_KEY_FILE: {secret_key_file}")
     if access_key_file and secret_key_file:
         access_key = read_secret(access_key_file)
         secret_key = read_secret(secret_key_file)
+        logger.debug(f"Read access_key: {'set' if access_key else 'not set'}, secret_key: {'set' if secret_key else 'not set'} from secrets")
         if access_key and secret_key:
             return access_key, secret_key
-    
     # Fallback to environment variables
     access_key = os.getenv("COMFY_AWS_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
     secret_key = os.getenv("COMFY_AWS_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
-    
+    logger.debug(f"Read access_key: {'set' if access_key else 'not set'}, secret_key: {'set' if secret_key else 'not set'} from environment")
     return access_key, secret_key
 
 # Get AWS credentials
 aws_access_key_id, aws_secret_access_key = get_aws_credentials()
 
+# Function to get S3 bucket (support secrets and env vars)
+def get_s3_bucket():
+    logger.debug("Getting S3 bucket name...")
+    bucket_file = os.getenv("COMFY_AWS_S3_BUCKET_FILE")
+    logger.debug(f"COMFY_AWS_S3_BUCKET_FILE: {bucket_file}")
+    if bucket_file:
+        bucket = read_secret(bucket_file)
+        logger.debug(f"Read S3 bucket from secret: {bucket if bucket else 'not set'}")
+        if bucket:
+            return bucket
+    bucket = os.getenv("COMFY_AWS_S3_BUCKET") or os.getenv("AWS_S3_BUCKET")
+    logger.debug(f"Read S3 bucket from environment: {bucket if bucket else 'not set'}")
+    return bucket
+
+# Function to get SQS queue name (support secrets and env vars)
+def get_sqs_queue_name():
+    logger.debug("Getting SQS queue name...")
+    queue_file = os.getenv("COMFY_AWS_SQS_NAME_FILE")
+    logger.debug(f"COMFY_AWS_SQS_NAME_FILE: {queue_file}")
+    if queue_file:
+        queue = read_secret(queue_file)
+        logger.debug(f"Read SQS queue name from secret: {queue if queue else 'not set'}")
+        if queue:
+            return queue
+    queue = os.getenv("COMFY_AWS_SQS_NAME") or os.getenv("AWS_SQS_NAME", "")
+    logger.debug(f"Read SQS queue name from environment: {queue if queue else 'not set'}")
+    return queue
+
 # S3 Watcher config
-S3_BUCKET = os.getenv("COMFY_AWS_S3_BUCKET") or os.getenv("AWS_S3_BUCKET")
+S3_BUCKET = get_s3_bucket()
 
 # SQS config
-QUEUE_NAME = os.getenv("COMFY_AWS_SQS_NAME") or os.getenv("AWS_SQS_NAME", "")
+QUEUE_NAME = get_sqs_queue_name()
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "output")
 
 # ComfyUI config

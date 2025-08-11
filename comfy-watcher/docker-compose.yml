@@ -2,14 +2,14 @@ version: '3.8'
 
 services:
   comfy-watcher:
-    image: jeffmit/comfy-watcher:latest
+    image: jeffmittens/comfy-watcher:latest
     environment:
       # AWS Configuration
       - COMFY_AWS_ACCESS_KEY_ID_FILE=/run/secrets/comfy_aws_access_key_id
       - COMFY_AWS_SECRET_ACCESS_KEY_FILE=/run/secrets/comfy_aws_secret_access_key
+      - COMFY_AWS_S3_BUCKET_FILE=/run/secrets/comfy_aws_s3_bucket
+      - COMFY_AWS_SQS_NAME_FILE=/run/secrets/comfy_aws_sqs_name
       - COMFY_AWS_DEFAULT_REGION=${COMFY_AWS_DEFAULT_REGION:-us-west-2}
-      - COMFY_AWS_S3_BUCKET=${COMFY_AWS_S3_BUCKET}
-      - COMFY_AWS_SQS_NAME=${COMFY_AWS_SQS_NAME}
       
       # ComfyUI Configuration
       - COMFY_HOST=${COMFY_HOST:-comfyui}
@@ -20,10 +20,12 @@ services:
       - POLL_INTERVAL=${POLL_INTERVAL:-2}
       - OUTPUT_FOLDER=/app/output
     volumes:
-      - comfy_output:/app/output
+      - /opt/comfyui/output:/app/output
     secrets:
       - comfy_aws_access_key_id
       - comfy_aws_secret_access_key
+      - comfy_aws_s3_bucket
+      - comfy_aws_sqs_name
     depends_on:
       - comfyui
     restart: unless-stopped
@@ -32,21 +34,29 @@ services:
 
   comfyui:
     # Replace with your ComfyUI container image
-    image: yanwk/comfyui-boot:latest
+    image: ghcr.io/lecode-official/comfyui-docker:latest
     ports:
       - "8188:8188"
     volumes:
-      - comfy_models:/app/models
-      - comfy_output:/app/output
+      - /opt/comfyui/models:/opt/comfyui/models:rw
+      - /opt/comfyui/custom_nodes:/opt/comfyui/custom_nodes:rw
+      - /opt/comfyui/output:/opt/comfyui/output:rw
     environment:
-      - CLI_ARGS=--listen 0.0.0.0
+      USER_ID: "1000"
+      GROUP_ID: "1000"
+      EXTRA_ARGS: "--listen 0.0.0.0 --disable-smart-memory"
     restart: unless-stopped
     networks:
       - comfy-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
-volumes:
-  comfy_models:
-  comfy_output:
+    runtime: nvidia
 
 networks:
   comfy-network:
@@ -57,3 +67,7 @@ secrets:
     file: ./secrets/aws_access_key_id.txt
   comfy_aws_secret_access_key:
     file: ./secrets/aws_secret_access_key.txt
+  comfy_aws_s3_bucket:
+    file: ./secrets/aws_s3_bucket.txt
+  comfy_aws_sqs_name:
+    file: ./secrets/aws_sqs_name.txt
