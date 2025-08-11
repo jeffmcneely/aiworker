@@ -23,7 +23,7 @@ export default function Home() {
   const [imageUrls, setImageUrls] = useState<ImageData[]>([])
   const [lastImageFilenames, setLastImageFilenames] = useState<string[] | null>(null)
   const [expandedImage, setExpandedImage] = useState<ImageData | null>(null)
-  const [detailsCollapsed, setDetailsCollapsed] = useState<boolean>(false)
+  const [detailsCollapsed, setDetailsCollapsed] = useState<boolean>(true)
 
   const fetchImageUrls = async (): Promise<ImageData[]> => {
     try {
@@ -140,8 +140,8 @@ export default function Home() {
             
             {/* Details Panel */}
             <div className="details-panel-container" style={{
-              flex: detailsCollapsed ? '0 0 auto' : '0 0 30%',
-              minWidth: detailsCollapsed ? '200px' : '300px',
+              flex: '0 0 30%',
+              minWidth: '300px',
               transition: 'all 0.3s ease-in-out',
               backgroundColor: 'rgba(0, 0, 0, 0.8)',
               borderRadius: '8px',
