@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   comfy-watcher:
-    image: jeffmit/comfy-watcher:latest
+    image: jeffmittens/comfy-watcher:latest
     environment:
       # AWS Configuration
       - COMFY_AWS_ACCESS_KEY_ID_FILE=/run/secrets/comfy_aws_access_key_id
@@ -20,7 +20,7 @@ services:
       - POLL_INTERVAL=${POLL_INTERVAL:-2}
       - OUTPUT_FOLDER=/app/output
     volumes:
-      - comfy_output:/app/output
+      - /opt/comfyui/output:/app/output
     secrets:
       - comfy_aws_access_key_id
       - comfy_aws_secret_access_key
@@ -34,21 +34,29 @@ services:
 
   comfyui:
     # Replace with your ComfyUI container image
-    image: yanwk/comfyui-boot:latest
+    image: ghcr.io/lecode-official/comfyui-docker:latest
     ports:
       - "8188:8188"
     volumes:
-      - comfy_models:/app/models
-      - comfy_output:/app/output
+      - /opt/comfyui/models:/opt/comfyui/models:rw
+      - /opt/comfyui/custom_nodes:/opt/comfyui/custom_nodes:rw
+      - /opt/comfyui/output:/opt/comfyui/output:rw
     environment:
-      - CLI_ARGS=--listen 0.0.0.0
+      USER_ID: "1000"
+      GROUP_ID: "1000"
+      EXTRA_ARGS: "--listen 0.0.0.0 --disable-smart-memory"
     restart: unless-stopped
     networks:
       - comfy-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
-volumes:
-  comfy_models:
-  comfy_output:
+    runtime: nvidia
 
 networks:
   comfy-network:
