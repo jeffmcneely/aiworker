@@ -87,7 +87,6 @@ export default function Home() {
                     alt={imageData.filename}
                     title={imageData.filename}
                     onClick={() => handleImageClick(imageData)}
-                    crossOrigin="anonymous"
                   />
                   <div className="filename-label">
                     {imageData.filename.substring(0, 8)}
@@ -124,7 +123,6 @@ export default function Home() {
                 src={expandedImage.url}
                 alt="Expanded"
                 onClick={handleExpandedImageClick}
-                crossOrigin="anonymous"
                 style={{
                   maxWidth: '100%',
                   maxHeight: '100%',
