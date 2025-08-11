@@ -87,6 +87,7 @@ export default function Home() {
                     alt={imageData.filename}
                     title={imageData.filename}
                     onClick={() => handleImageClick(imageData)}
+                    crossOrigin="anonymous"
                   />
                   <div className="filename-label">
                     {imageData.filename.substring(0, 8)}
@@ -123,6 +124,7 @@ export default function Home() {
                 src={expandedImage.url}
                 alt="Expanded"
                 onClick={handleExpandedImageClick}
+                crossOrigin="anonymous"
                 style={{
                   maxWidth: '100%',
                   maxHeight: '100%',
@@ -178,24 +180,32 @@ export default function Home() {
                 }}
               >
                 {/* Filename and Prompt at top of expandable content */}
-                <div className="image-title" style={{ 
-                  color: 'white', 
-                  fontSize: '16px', 
-                  fontWeight: 'bold',
+                <div className="detail-item" style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  color: 'white',
+                  fontSize: '14px',
                   marginBottom: '12px'
                 }}>
-                  {expandedImage.filename}
+                  <span className="detail-label" style={{ color: '#aaa' }}>Filename:</span>
+                  <span className="detail-value">{expandedImage.filename}</span>
                 </div>
                 {expandedImage.prompt && (
-                  <div className="image-prompt" style={{ 
-                    color: '#ccc', 
+                  <div className="detail-item" style={{
+                    color: 'white',
                     fontSize: '14px',
-                    lineHeight: '1.4',
                     marginBottom: '16px',
                     paddingBottom: '12px',
                     borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
                   }}>
-                    {expandedImage.prompt}
+                    <div style={{ color: '#aaa', marginBottom: '4px' }}>Prompt:</div>
+                    <div style={{ 
+                      color: '#ddd',
+                      lineHeight: '1.4',
+                      fontSize: '13px'
+                    }}>
+                      {expandedImage.prompt}
+                    </div>
                   </div>
                 )}
                 
