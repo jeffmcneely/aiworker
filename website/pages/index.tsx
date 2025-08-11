@@ -116,7 +116,9 @@ export default function Home() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'flex 0.3s ease-in-out'
+              transition: 'flex 0.3s ease-in-out',
+              minHeight: '400px',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
             }}>
               <img
                 className="expanded-image"
@@ -127,8 +129,11 @@ export default function Home() {
                   maxWidth: '100%',
                   maxHeight: '100%',
                   objectFit: 'contain',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  display: 'block'
                 }}
+                onLoad={() => console.log('Image loaded successfully')}
+                onError={(e) => console.error('Image failed to load:', e)}
               />
             </div>
             
