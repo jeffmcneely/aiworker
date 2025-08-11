@@ -156,24 +156,6 @@ export default function Home() {
                   marginBottom: detailsCollapsed ? '0' : '12px'
                 }}
               >
-                <div className="image-title" style={{ 
-                  color: 'white', 
-                  fontSize: '16px', 
-                  fontWeight: 'bold',
-                  marginBottom: '8px'
-                }}>
-                  {expandedImage.filename}
-                </div>
-                {expandedImage.prompt && (
-                  <div className="image-prompt" style={{ 
-                    color: '#ccc', 
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                    marginBottom: '8px'
-                  }}>
-                    {expandedImage.prompt}
-                  </div>
-                )}
                 <div className="collapse-indicator" style={{ 
                   fontSize: '12px', 
                   opacity: 0.7,
@@ -195,6 +177,28 @@ export default function Home() {
                   transform: detailsCollapsed ? 'translateY(-10px)' : 'translateY(0)',
                 }}
               >
+                {/* Filename and Prompt at top of expandable content */}
+                <div className="image-title" style={{ 
+                  color: 'white', 
+                  fontSize: '16px', 
+                  fontWeight: 'bold',
+                  marginBottom: '12px'
+                }}>
+                  {expandedImage.filename}
+                </div>
+                {expandedImage.prompt && (
+                  <div className="image-prompt" style={{ 
+                    color: '#ccc', 
+                    fontSize: '14px',
+                    lineHeight: '1.4',
+                    marginBottom: '16px',
+                    paddingBottom: '12px',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                  }}>
+                    {expandedImage.prompt}
+                  </div>
+                )}
+                
                 <div className="details-grid" style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr',
