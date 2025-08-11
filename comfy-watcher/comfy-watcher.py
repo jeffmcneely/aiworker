@@ -144,6 +144,63 @@ def send_sqs_message(queue_name, message_body):
     logger.debug(f"SQS message sent: {response['MessageId']}")
 
 
+def apply_workflow_mapping(workflow, tti_input, mapping):
+    """Apply TTI input parameters to workflow using mapping configuration"""
+    # Use seed from the TTI_input instead of generating a new one
+    seed = tti_input.seed if tti_input.seed != 0 else secrets.randbits(64)
+    
+    # Create a mapping of TTI_input attributes to their values
+    input_values = {
+        'prompt': tti_input.prompt,
+        'negativePrompt': tti_input.negativePrompt,
+        'height': tti_input.height,
+        'width': tti_input.width,
+        'steps': tti_input.steps,
+        'seed': seed,
+        'cfg': tti_input.cfg,
+        'batch_size': 1  # Default value
+    }
+    
+    for param, value in input_values.items():
+        if param in mapping:
+            mapping_config = mapping[param]
+            
+            # Handle both single mappings and arrays of mappings
+            if isinstance(mapping_config, list):
+                for config in mapping_config:
+                    apply_single_mapping(workflow, config, value)
+            else:
+                apply_single_mapping(workflow, mapping_config, value)
+    
+    return seed
+
+def apply_single_mapping(workflow, config, value):
+    """Apply a single parameter mapping to the workflow"""
+    node_id = config["node"]
+    input_name = config["input"]
+    is_optional = config.get("optional", False)
+    default_value = config.get("default")
+    
+    # Use default value if provided and current value is None
+    if value is None and default_value is not None:
+        value = default_value
+    
+    # Skip if value is None and mapping is optional
+    if value is None and is_optional:
+        return
+    
+    # Check if the node and input exist before setting
+    if node_id in workflow:
+        if "inputs" in workflow[node_id]:
+            if not is_optional or input_name in workflow[node_id]["inputs"]:
+                workflow[node_id]["inputs"][input_name] = value
+                logger.debug(f"Set {node_id}.inputs.{input_name} = {value}")
+        else:
+            logger.warning(f"Node {node_id} has no inputs section")
+    else:
+        logger.warning(f"Node {node_id} not found in workflow")
+
+
 def receive_sqs_messages(queue_name):
     queue_url = get_sqs_url_by_name(queue_name)
     if not queue_url:
@@ -157,7 +214,7 @@ def receive_sqs_messages(queue_name):
         sqs_body_dict = json.loads(msg["Body"])
         tti_input = TTI_input(sqs_body_dict)
         sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=msg["ReceiptHandle"])
-        # Load workflow from hidream.json
+        # Load workflow from model.json
         try:
             workflow_path = os.path.join(
                 os.path.dirname(__file__),
@@ -172,43 +229,24 @@ def receive_sqs_messages(queue_name):
             )
             return
 
-        # workflow variable is loaded and available here
-        logger.debug("SQS message deleted")
-        # Use seed from the TTI_input instead of generating a new one
-        seed = tti_input.seed if tti_input.seed != 0 else secrets.randbits(64)  # Use provided seed or generate random if 0
-        match tti_input.model:
-            case "hidream":
-                workflow["16"]["inputs"]["text"] = tti_input.prompt
-                workflow["53"]["inputs"]["height"] = tti_input.height
-                workflow["53"]["inputs"]["width"] = tti_input.width
-                workflow["3"]["inputs"]["steps"] = tti_input.steps
-                workflow["3"]["inputs"]["seed"] = seed
-                workflow["40"]["inputs"]["text"] = tti_input.negativePrompt
-                workflow["3"]["inputs"]["cfg"] = tti_input.cfg
-            case "flux":
-                workflow["41"]["inputs"]["clip_l"] = tti_input.prompt
-                workflow["41"]["inputs"]["t5xxl"] = tti_input.prompt
-                workflow["31"]["inputs"]["seed"] = seed
-                workflow["27"]["inputs"]["height"] = tti_input.height
-                workflow["27"]["inputs"]["width"] = tti_input.width
-            case "omnigen":
-                workflow["6"]["inputs"]["text"] = tti_input.prompt
-                workflow["11"]["inputs"]["height"] = tti_input.height
-                workflow["11"]["inputs"]["width"] = tti_input.width
-                #workflow["23"]["inputs"]["steps"] = tti_input.steps
-                workflow["21"]["inputs"]["noise_seed"] = seed
-                workflow["7"]["inputs"]["text"] = tti_input.negativePrompt
-            case "sd3.5":
-                workflow["16"]["inputs"]["text"] = tti_input.prompt
-                workflow["40"]["inputs"]["text"] = tti_input.negativePrompt
-                workflow["53"]["inputs"]["width"] = tti_input.width
-                workflow["53"]["inputs"]["height"] = tti_input.height
-                workflow["53"]["inputs"]["batch_size"] = 1
-                workflow["3"]["inputs"]["seed"] = seed
-                workflow["3"]["inputs"]["steps"] = tti_input.steps
-                workflow["3"]["inputs"]["cfg"] = tti_input.cfg
-                if "negative_prompt" in workflow.get("71", {}).get("inputs", {}):
-                    workflow["71"]["inputs"]["text"] = tti_input.negativePrompt
+        # Load mapping configuration for this model
+        try:
+            mapping_path = os.path.join(
+                os.path.dirname(__file__),
+                "workflows",
+                tti_input.model + ".mapping.json",
+            )
+            with open(mapping_path, "r") as f:
+                mapping = json.load(f)
+        except FileNotFoundError:
+            logger.debug(
+                f"Mapping file not found at {mapping_path}. Please ensure it exists."
+            )
+            return
+
+        # Apply TTI input parameters to workflow using mapping
+        logger.debug("Applying workflow mapping...")
+        seed = apply_workflow_mapping(workflow, tti_input, mapping)
         prompt = {"prompt": workflow}
         data = json.dumps(prompt).encode("utf-8")
         logger.info(f"using prompt: {tti_input.prompt}")

@@ -1,0 +1,24 @@
+{
+  "prompt": [
+    {
+      "node": "41",
+      "input": "clip_l"
+    },
+    {
+      "node": "41",
+      "input": "t5xxl"
+    }
+  ],
+  "seed": {
+    "node": "31",
+    "input": "seed"
+  },
+  "height": {
+    "node": "27",
+    "input": "height"
+  },
+  "width": {
+    "node": "27",
+    "input": "width"
+  }
+}

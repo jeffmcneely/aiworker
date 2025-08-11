@@ -1,0 +1,42 @@
+{
+  "prompt": {
+    "node": "16",
+    "input": "text"
+  },
+  "negativePrompt": [
+    {
+      "node": "40",
+      "input": "text"
+    },
+    {
+      "node": "71",
+      "input": "text",
+      "optional": true
+    }
+  ],
+  "width": {
+    "node": "53",
+    "input": "width"
+  },
+  "height": {
+    "node": "53",
+    "input": "height"
+  },
+  "seed": {
+    "node": "3",
+    "input": "seed"
+  },
+  "steps": {
+    "node": "3",
+    "input": "steps"
+  },
+  "cfg": {
+    "node": "3",
+    "input": "cfg"
+  },
+  "batch_size": {
+    "node": "53",
+    "input": "batch_size",
+    "default": 1
+  }
+}
