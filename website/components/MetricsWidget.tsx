@@ -73,6 +73,7 @@ export default function MetricsWidget() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [selectedHost, setSelectedHost] = useState<string | null>(null)
+  const [isPaused, setIsPaused] = useState(false)
 
   const fetchMetricsList = async () => {
     try {
@@ -171,23 +172,25 @@ export default function MetricsWidget() {
   }
 
   useEffect(() => {
+    if (isPaused) return
+    
     fetchMetricsList()
     
     // Fetch list every 30 seconds
     const listInterval = setInterval(fetchMetricsList, 30000)
     
     return () => clearInterval(listInterval)
-  }, [])
+  }, [isPaused])
 
   useEffect(() => {
-    if (metricsList && retryCount < 5) {
-      fetchAllMetrics()
-      
-      // Fetch individual metrics every 1 second
-      const metricsInterval = setInterval(fetchAllMetrics, 1000)
-      return () => clearInterval(metricsInterval)
-    }
-  }, [metricsList, retryCount])
+    if (isPaused || !metricsList || retryCount >= 5) return
+    
+    fetchAllMetrics()
+    
+    // Fetch individual metrics every 1 second
+    const metricsInterval = setInterval(fetchAllMetrics, 1000)
+    return () => clearInterval(metricsInterval)
+  }, [metricsList, retryCount, isPaused])
 
   const currentMetrics = selectedHost ? metricsCollection[selectedHost] : null
   const hostOptions = metricsList ? Object.keys(metricsList) : []
@@ -197,8 +200,17 @@ export default function MetricsWidget() {
       <div className={styles.widget}>
         <div className={styles.header}>
           <h3>System Metrics</h3>
-          <div className={styles.status} style={{ color: '#ef4444' }}>
-            Error {retryCount > 0 && `(${retryCount})`}
+          <div className={styles.controls}>
+            <button 
+              onClick={() => setIsPaused(!isPaused)}
+              className={styles.pauseButton}
+              title={isPaused ? 'Resume updates' : 'Pause updates'}
+            >
+              {isPaused ? '▶️' : '⏸️'}
+            </button>
+            <div className={styles.status} style={{ color: '#ef4444' }}>
+              Error {retryCount > 0 && `(${retryCount})`}
+            </div>
           </div>
         </div>
         <div className={styles.error}>
@@ -218,7 +230,16 @@ export default function MetricsWidget() {
       <div className={styles.widget}>
         <div className={styles.header}>
           <h3>System Metrics</h3>
-          <div className={styles.status}>Loading...</div>
+          <div className={styles.controls}>
+            <button 
+              onClick={() => setIsPaused(!isPaused)}
+              className={styles.pauseButton}
+              title={isPaused ? 'Resume updates' : 'Pause updates'}
+            >
+              {isPaused ? '▶️' : '⏸️'}
+            </button>
+            <div className={styles.status}>Loading...</div>
+          </div>
         </div>
         <div className={styles.loading}>Fetching metrics list...</div>
       </div>
@@ -230,7 +251,16 @@ export default function MetricsWidget() {
       <div className={styles.widget}>
         <div className={styles.header}>
           <h3>System Metrics</h3>
-          <div className={styles.status}>Loading...</div>
+          <div className={styles.controls}>
+            <button 
+              onClick={() => setIsPaused(!isPaused)}
+              className={styles.pauseButton}
+              title={isPaused ? 'Resume updates' : 'Pause updates'}
+            >
+              {isPaused ? '▶️' : '⏸️'}
+            </button>
+            <div className={styles.status}>Loading...</div>
+          </div>
         </div>
         <div className={styles.loading}>
           {hostOptions.length > 0 ? 'Fetching metrics...' : 'No hosts available'}
@@ -245,8 +275,17 @@ export default function MetricsWidget() {
     <div className={styles.widget}>
       <div className={styles.header}>
         <h3>System Metrics</h3>
-        <div className={styles.status} style={{ color: '#4ade80' }}>
-          Live • {lastUpdate?.toLocaleTimeString()}
+        <div className={styles.controls}>
+          <button 
+            onClick={() => setIsPaused(!isPaused)}
+            className={styles.pauseButton}
+            title={isPaused ? 'Resume updates' : 'Pause updates'}
+          >
+            {isPaused ? '▶️' : '⏸️'}
+          </button>
+          <div className={styles.status} style={{ color: isPaused ? '#fbbf24' : '#4ade80' }}>
+            {isPaused ? 'Paused' : 'Live'} • {lastUpdate?.toLocaleTimeString()}
+          </div>
         </div>
       </div>
       
