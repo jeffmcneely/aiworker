@@ -61,8 +61,11 @@ export default function Home() {
     setExpandedImage(imageData)
   }
 
-  const handleExpandedImageClick = () => {
-    setExpandedImage(null)
+  const handleExpandedImageClick = (e: React.MouseEvent) => {
+    // Only close on left click, allow right click for context menu
+    if (e.button === 0) { // Left click
+      setExpandedImage(null)
+    }
   }
 
   const toggleDetailsPanel = () => {
@@ -128,7 +131,7 @@ export default function Home() {
                 className="expanded-image"
                 src={expandedImage.url}
                 alt="Expanded"
-                onClick={handleExpandedImageClick}
+                onMouseDown={handleExpandedImageClick}
                 fill
                 style={{
                   objectFit: 'contain',
@@ -138,6 +141,10 @@ export default function Home() {
                 }}
                 onLoad={() => console.log('Image loaded successfully')}
                 onError={(e) => console.error('Image failed to load:', e)}
+                onContextMenu={(e) => {
+                  // Allow right-click context menu
+                  e.stopPropagation()
+                }}
               />
             </div>
             
