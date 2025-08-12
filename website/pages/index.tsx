@@ -114,8 +114,7 @@ export default function Home() {
           <div className="image-viewer-container" style={{ 
             display: 'flex', 
             height: '100%', 
-            gap: '20px',
-            padding: '20px'
+            gap: '0'
           }}>
             {/* Image Section */}
             <div className="image-section" style={{ 
@@ -125,7 +124,7 @@ export default function Home() {
               justifyContent: 'center',
               transition: 'flex 0.3s ease-in-out',
               minHeight: '400px',
-              border: '1px solid rgba(255, 255, 255, 0.1)'
+              position: 'relative'
             }}>
               <Image
                 className="expanded-image"
@@ -150,15 +149,15 @@ export default function Home() {
             
             {/* Details Panel */}
             <div className="details-panel-container" style={{
-              flex: '0 0 30%',
-              minWidth: '300px',
+              flex: detailsCollapsed ? '0 0 60px' : '0 0 30%',
+              minWidth: detailsCollapsed ? '60px' : '300px',
               transition: 'all 0.3s ease-in-out',
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              borderRadius: '8px',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
               padding: '16px',
-              height: 'fit-content',
-              maxHeight: '90vh',
-              overflowY: 'auto'
+              height: '100vh',
+              overflowY: 'auto',
+              position: 'relative'
             }}>
               {/* Header - Always Visible */}
               <div 
@@ -169,16 +168,19 @@ export default function Home() {
                   userSelect: 'none',
                   borderBottom: detailsCollapsed ? 'none' : '1px solid rgba(255, 255, 255, 0.2)',
                   paddingBottom: detailsCollapsed ? '0' : '12px',
-                  marginBottom: detailsCollapsed ? '0' : '12px'
+                  marginBottom: detailsCollapsed ? '0' : '12px',
+                  transition: 'all 0.3s ease-in-out'
                 }}
               >
                 <div className="collapse-indicator" style={{ 
                   fontSize: '12px', 
                   opacity: 0.7,
                   color: '#888',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  transform: detailsCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease-in-out'
                 }}>
-                  {detailsCollapsed ? '▶ Show Details' : '▼ Hide Details'}
+                  {detailsCollapsed ? '▶ Details' : '▼ Hide'}
                 </div>
               </div>
               
@@ -189,7 +191,7 @@ export default function Home() {
                   overflow: 'hidden',
                   maxHeight: detailsCollapsed ? '0' : '1000px',
                   opacity: detailsCollapsed ? 0 : 1,
-                  transition: 'max-height 0.4s ease-in-out, opacity 0.3s ease-in-out',
+                  transition: 'max-height 0.4s ease-in-out, opacity 0.6s ease-in-out',
                   transform: detailsCollapsed ? 'translateY(-10px)' : 'translateY(0)',
                 }}
               >
@@ -199,7 +201,9 @@ export default function Home() {
                   justifyContent: 'space-between',
                   color: 'white',
                   fontSize: '14px',
-                  marginBottom: '12px'
+                  marginBottom: '12px',
+                  opacity: detailsCollapsed ? 0 : 1,
+                  transition: 'opacity 0.8s ease-in-out 0.2s'
                 }}>
                   <span className="detail-label" style={{ color: '#aaa' }}>Filename:</span>
                   <span className="detail-value">{expandedImage.filename}</span>
@@ -210,7 +214,9 @@ export default function Home() {
                     fontSize: '14px',
                     marginBottom: '16px',
                     paddingBottom: '12px',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    opacity: detailsCollapsed ? 0 : 1,
+                    transition: 'opacity 0.8s ease-in-out 0.3s'
                   }}>
                     <div className="detail-label" style={{ marginBottom: '4px' }}>Prompt:</div>
                     <div className="detail-value" style={{ 
@@ -226,13 +232,17 @@ export default function Home() {
                   display: 'grid',
                   gridTemplateColumns: '1fr',
                   gap: '12px',
-                  paddingTop: '4px'
+                  paddingTop: '4px',
+                  opacity: detailsCollapsed ? 0 : 1,
+                  transition: 'opacity 0.8s ease-in-out 0.4s'
                 }}>
                   <div className="detail-item" style={{ 
                     display: 'flex', 
                     justifyContent: 'space-between',
                     color: 'white',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    opacity: detailsCollapsed ? 0 : 1,
+                    transition: 'opacity 0.8s ease-in-out 0.5s'
                   }}>
                     <span className="detail-label" style={{ color: '#aaa' }}>Model:</span>
                     <span className="detail-value">{expandedImage.model || 'N/A'}</span>
@@ -241,7 +251,9 @@ export default function Home() {
                     display: 'flex', 
                     justifyContent: 'space-between',
                     color: 'white',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    opacity: detailsCollapsed ? 0 : 1,
+                    transition: 'opacity 0.8s ease-in-out 0.6s'
                   }}>
                     <span className="detail-label" style={{ color: '#aaa' }}>Size:</span>
                     <span className="detail-value">{expandedImage.width}×{expandedImage.height}</span>
@@ -250,7 +262,9 @@ export default function Home() {
                     display: 'flex', 
                     justifyContent: 'space-between',
                     color: 'white',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    opacity: detailsCollapsed ? 0 : 1,
+                    transition: 'opacity 0.8s ease-in-out 0.7s'
                   }}>
                     <span className="detail-label" style={{ color: '#aaa' }}>Steps:</span>
                     <span className="detail-value">{expandedImage.steps || 'N/A'}</span>
@@ -259,7 +273,9 @@ export default function Home() {
                     display: 'flex', 
                     justifyContent: 'space-between',
                     color: 'white',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    opacity: detailsCollapsed ? 0 : 1,
+                    transition: 'opacity 0.8s ease-in-out 0.8s'
                   }}>
                     <span className="detail-label" style={{ color: '#aaa' }}>CFG:</span>
                     <span className="detail-value">{expandedImage.cfg || 'N/A'}</span>
@@ -268,7 +284,9 @@ export default function Home() {
                     display: 'flex', 
                     justifyContent: 'space-between',
                     color: 'white',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    opacity: detailsCollapsed ? 0 : 1,
+                    transition: 'opacity 0.8s ease-in-out 0.9s'
                   }}>
                     <span className="detail-label" style={{ color: '#aaa' }}>Seed:</span>
                     <span className="detail-value">{expandedImage.seed || 'N/A'}</span>
@@ -277,7 +295,9 @@ export default function Home() {
                     display: 'flex', 
                     justifyContent: 'space-between',
                     color: 'white',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    opacity: detailsCollapsed ? 0 : 1,
+                    transition: 'opacity 0.8s ease-in-out 1.0s'
                   }}>
                     <span className="detail-label" style={{ color: '#aaa' }}>Generation Time:</span>
                     <span className="detail-value">{expandedImage.elapsed ? `${expandedImage.elapsed}s` : 'N/A'}</span>
@@ -286,7 +306,9 @@ export default function Home() {
                     <div className="detail-item negative-prompt" style={{
                       gridColumn: '1 / -1',
                       color: 'white',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      opacity: detailsCollapsed ? 0 : 1,
+                      transition: 'opacity 0.8s ease-in-out 1.1s'
                     }}>
                       <div className="detail-label" style={{ marginBottom: '4px' }}>Negative Prompt:</div>
                       <div className="detail-value" style={{ 
