@@ -73,7 +73,7 @@ export default function MetricsWidget() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [selectedHost, setSelectedHost] = useState<string | null>(null)
-  const [isPaused, setIsPaused] = useState(process.env.NEXT_PUBLIC_AWS_BRANCH === 'test')
+  const [isPaused, setIsPaused] = useState(process.env.AWS_BRANCH === 'test')
 
   const fetchMetricsList = useCallback(async () => {
     try {

@@ -9,6 +9,7 @@ applications:
             - mkdir -p .next/cache
         build:
           commands:
+            - env | grep -e AWS_BRANCH >> website/.env.production
             - npm run build
             - ls -la out/ # Debug: list the output directory
             # Copy _headers file to output directory for Amplify
