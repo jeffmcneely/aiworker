@@ -8,7 +8,7 @@ const nextConfig = {
   },
   env: {
     METRICS_BUCKET_BASE: process.env.METRICS_BUCKET_BASE,
-  },
+  }
 }
 
 module.exports = nextConfig

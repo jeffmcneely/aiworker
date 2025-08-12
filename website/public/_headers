@@ -1,0 +1,25 @@
+# Global headers for all files
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: DENY
+
+# Web manifest files
+/site.webmanifest
+  Content-Type: application/manifest+json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+# Pattern for all webmanifest files
+/*.webmanifest
+  Content-Type: application/manifest+json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+# XML files
+/*.xml
+  Content-Type: application/xml
+
+# PNG images with long cache
+/*.png
+  Content-Type: image/png
+  Cache-Control: public, max-age=31536000
