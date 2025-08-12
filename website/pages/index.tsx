@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import Layout from '../components/Layout'
 import MetricsWidget from '../components/MetricsWidget'
@@ -38,7 +38,7 @@ export default function Home() {
     }
   }
 
-  const refreshSidebar = async () => {
+  const refreshSidebar = useCallback(async () => {
     const newImageUrls = await fetchImageUrls()
     
     const currentFilenames = newImageUrls.map(imageData => imageData.filename)
@@ -49,13 +49,13 @@ export default function Home() {
     
     setLastImageFilenames(currentFilenames)
     setImageUrls(newImageUrls)
-  }
+  }, [lastImageFilenames])
 
   useEffect(() => {
     refreshSidebar()
     const interval = setInterval(refreshSidebar, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [refreshSidebar])
 
   const handleImageClick = (imageData: ImageData) => {
     setExpandedImage(imageData)
