@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import styles from './MetricsWidget.module.css'
 
 interface MetricsData {
@@ -75,7 +75,7 @@ export default function MetricsWidget() {
   const [selectedHost, setSelectedHost] = useState<string | null>(null)
   const [isPaused, setIsPaused] = useState(false)
 
-  const fetchMetricsList = async () => {
+  const fetchMetricsList = useCallback(async () => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_METRICS_BUCKET_BASE
       if (!baseUrl) {
@@ -125,7 +125,7 @@ export default function MetricsWidget() {
       setError(errorMessage)
       setRetryCount(prev => prev + 1)
     }
-  }
+  }, [selectedHost])
 
   const fetchMetricsForHost = async (hostname: string) => {
     try {
@@ -160,7 +160,7 @@ export default function MetricsWidget() {
     }
   }
 
-  const fetchAllMetrics = async () => {
+  const fetchAllMetrics = useCallback(async () => {
     if (!metricsList) return
     
     // Fetch metrics for all hosts in parallel
@@ -169,7 +169,7 @@ export default function MetricsWidget() {
     )
     
     await Promise.allSettled(promises)
-  }
+  }, [metricsList])
 
   useEffect(() => {
     if (isPaused) return
@@ -180,7 +180,7 @@ export default function MetricsWidget() {
     const listInterval = setInterval(fetchMetricsList, 30000)
     
     return () => clearInterval(listInterval)
-  }, [isPaused])
+  }, [isPaused, fetchMetricsList])
 
   useEffect(() => {
     if (isPaused || !metricsList || retryCount >= 5) return
@@ -190,7 +190,7 @@ export default function MetricsWidget() {
     // Fetch individual metrics every 1 second
     const metricsInterval = setInterval(fetchAllMetrics, 1000)
     return () => clearInterval(metricsInterval)
-  }, [metricsList, retryCount, isPaused])
+  }, [metricsList, retryCount, isPaused, fetchAllMetrics])
 
   const currentMetrics = selectedHost ? metricsCollection[selectedHost] : null
   const hostOptions = metricsList ? Object.keys(metricsList) : []
