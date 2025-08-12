@@ -10,7 +10,8 @@ const { randomUUID } = require('crypto');
 // CORS configuration
 const allowedOrigins = [
   'https://ai.mcneely.io',
-  'https://test.ai.mcneely.io'
+  'https://test.ai.mcneely.io',
+  'http://localhost:3000'
 ];
 
 const getCorsHeaders = (origin, isStaticFile = false) => {
