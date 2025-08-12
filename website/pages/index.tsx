@@ -113,7 +113,7 @@ export default function Home() {
         {expandedImage && (
           <div className="image-viewer-container" style={{ 
             display: 'flex', 
-            height: '100%', 
+            height: '100vh', 
             gap: '0'
           }}>
             {/* Image Section */}
@@ -123,8 +123,10 @@ export default function Home() {
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'flex 0.3s ease-in-out',
-              minHeight: '400px',
-              position: 'relative'
+              height: '100vh',
+              position: 'relative',
+              padding: '0',
+              margin: '0'
             }}>
               <Image
                 className="expanded-image"
