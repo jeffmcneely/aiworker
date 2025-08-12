@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Layout from '../components/Layout'
 import MetricsWidget from '../components/MetricsWidget'
 import Link from 'next/link'
@@ -82,11 +83,14 @@ export default function Home() {
             <div className="image-list">
               {imageUrls.map((imageData, idx) => (
                 <div key={idx} className="thumb-container">
-                  <img
+                  <Image
                     src={imageData.url}
                     alt={imageData.filename}
                     title={imageData.filename}
                     onClick={() => handleImageClick(imageData)}
+                    width={150}
+                    height={150}
+                    style={{ objectFit: 'cover' }}
                   />
                   <div className="filename-label">
                     {imageData.filename.substring(0, 8)}
@@ -120,14 +124,13 @@ export default function Home() {
               minHeight: '400px',
               border: '1px solid rgba(255, 255, 255, 0.1)'
             }}>
-              <img
+              <Image
                 className="expanded-image"
                 src={expandedImage.url}
                 alt="Expanded"
                 onClick={handleExpandedImageClick}
+                fill
                 style={{
-                  maxWidth: '100%',
-                  maxHeight: '100%',
                   objectFit: 'contain',
                   cursor: 'pointer',
                   display: 'block',
