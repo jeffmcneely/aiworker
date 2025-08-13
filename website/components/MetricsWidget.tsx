@@ -73,7 +73,14 @@ export default function MetricsWidget() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [selectedHost, setSelectedHost] = useState<string | null>(null)
-  const [isPaused, setIsPaused] = useState(process.env.AWS_BRANCH === 'test')
+  const [isPaused, setIsPaused] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+
+  // Handle client-side initialization to prevent hydration mismatch
+  useEffect(() => {
+    setIsClient(true)
+    setIsPaused(process.env.NEXT_PUBLIC_AWS_BRANCH === 'test')
+  }, [])
 
   const fetchMetricsList = useCallback(async () => {
     try {
@@ -284,7 +291,7 @@ export default function MetricsWidget() {
             {isPaused ? '▶️' : '⏸️'}
           </button>
           <div className={styles.status} style={{ color: isPaused ? '#fbbf24' : '#4ade80' }}>
-            {isPaused ? 'Paused' : 'Live'} • {lastUpdate?.toLocaleTimeString()}
+            {isPaused ? 'Paused' : 'Live'} • {isClient && lastUpdate ? lastUpdate.toLocaleTimeString() : '--:--:--'}
           </div>
         </div>
       </div>
@@ -300,7 +307,7 @@ export default function MetricsWidget() {
           >
             {hostOptions.map(hostname => (
               <option key={hostname} value={hostname}>
-                {hostname} {metricsList && metricsList[hostname] ? 
+                {hostname} {isClient && metricsList && metricsList[hostname] ? 
                   `(${new Date(metricsList[hostname]).toLocaleTimeString()})` : ''}
               </option>
             ))}

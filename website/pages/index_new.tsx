@@ -47,12 +47,7 @@ export default function Home() {
     
     setLastImageFilenames(currentFilenames)
     setImageUrls(newImageUrls)
-    
-    // Auto-select first image if there are images and none is currently selected
-    if (newImageUrls.length > 0 && !expandedImage) {
-      setExpandedImage(newImageUrls[0])
-    }
-  }, [lastImageFilenames, expandedImage])
+  }, [lastImageFilenames])
 
   useEffect(() => {
     refreshSidebar()
@@ -105,88 +100,95 @@ export default function Home() {
             )}
           </div>
           
-          {/* Details Panel - Always Visible at Sidebar Bottom */}
-          <div 
-            key={expandedImage?.uuid || 'empty'} 
-            className="sidebar-details-panel" 
-            style={{
+          {/* Details Panel - Moved to Sidebar Bottom */}
+          {expandedImage && (
+            <div className="sidebar-details-panel" style={{
               backgroundColor: 'rgba(0, 0, 0, 0.9)',
               borderTop: '1px solid rgba(255, 255, 255, 0.1)',
               padding: '12px',
               marginTop: '8px',
-              borderRadius: '8px',
-              height: '180px', // 50% taller than before (was ~120px)
-              overflowY: 'auto',
-              maxHeight: '180px'
+              borderRadius: '8px'
             }}>
-            {/* Filename and Prompt */}
-            <div className="detail-item rainbow-text" style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              fontSize: '11px',
-              marginBottom: '8px'
-            }}>
-              <span className="detail-label" style={{ color: '#aaa' }}>File:</span>
-              <span className="detail-value">{expandedImage?.filename || ''}</span>
-            </div>
-            <div className="detail-item rainbow-text" style={{
-              fontSize: '11px',
-              marginBottom: '8px'
-            }}>
-              <div className="detail-label" style={{ color: '#aaa', marginBottom: '2px' }}>Prompt:</div>
-              <div className="detail-value" style={{ 
-                lineHeight: '1.3',
-                fontSize: '10px'
-              }}>
-                {expandedImage?.prompt || ''}
-              </div>
-            </div>
-            
-            {/* Technical Details */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '10px' }}>
-              <div className="detail-item rainbow-text" style={{ 
+              {/* Filename and Prompt */}
+              <div className="detail-item" style={{ 
                 display: 'flex', 
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                color: 'white',
+                fontSize: '11px',
+                marginBottom: '8px'
               }}>
-                <span className="detail-label" style={{ color: '#aaa' }}>Size:</span>
-                <span className="detail-value">{expandedImage ? `${expandedImage.width}×${expandedImage.height}` : ''}</span>
+                <span className="detail-label" style={{ color: '#aaa' }}>File:</span>
+                <span className="detail-value">{expandedImage.filename}</span>
               </div>
-              <div className="detail-item rainbow-text" style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between'
-              }}>
-                <span className="detail-label" style={{ color: '#aaa' }}>Steps:</span>
-                <span className="detail-value">{expandedImage?.steps || ''}</span>
+              {expandedImage.prompt && (
+                <div className="detail-item" style={{
+                  color: 'white',
+                  fontSize: '11px',
+                  marginBottom: '8px'
+                }}>
+                  <div className="detail-label" style={{ color: '#aaa', marginBottom: '2px' }}>Prompt:</div>
+                  <div className="detail-value" style={{ 
+                    lineHeight: '1.3',
+                    fontSize: '10px'
+                  }}>
+                    {expandedImage.prompt}
+                  </div>
+                </div>
+              )}
+              
+              {/* Technical Details */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '10px' }}>
+                <div className="detail-item" style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  color: 'white'
+                }}>
+                  <span className="detail-label" style={{ color: '#aaa' }}>Size:</span>
+                  <span className="detail-value">{expandedImage.width}×{expandedImage.height}</span>
+                </div>
+                <div className="detail-item" style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  color: 'white'
+                }}>
+                  <span className="detail-label" style={{ color: '#aaa' }}>Steps:</span>
+                  <span className="detail-value">{expandedImage.steps || 'N/A'}</span>
+                </div>
+                <div className="detail-item" style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  color: 'white'
+                }}>
+                  <span className="detail-label" style={{ color: '#aaa' }}>CFG:</span>
+                  <span className="detail-value">{expandedImage.cfg || 'N/A'}</span>
+                </div>
+                <div className="detail-item" style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  color: 'white'
+                }}>
+                  <span className="detail-label" style={{ color: '#aaa' }}>Time:</span>
+                  <span className="detail-value">{expandedImage.elapsed ? `${expandedImage.elapsed}s` : 'N/A'}</span>
+                </div>
               </div>
-              <div className="detail-item rainbow-text" style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between'
-              }}>
-                <span className="detail-label" style={{ color: '#aaa' }}>CFG:</span>
-                <span className="detail-value">{expandedImage?.cfg || ''}</span>
-              </div>
-              <div className="detail-item rainbow-text" style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between'
-              }}>
-                <span className="detail-label" style={{ color: '#aaa' }}>Time:</span>
-                <span className="detail-value">{expandedImage?.elapsed ? `${expandedImage.elapsed}s` : ''}</span>
-              </div>
+              
+              {expandedImage.negativePrompt && (
+                <div className="detail-item negative-prompt" style={{
+                  color: 'white',
+                  fontSize: '10px',
+                  marginTop: '8px'
+                }}>
+                  <div className="detail-label" style={{ color: '#aaa', marginBottom: '2px' }}>Negative Prompt:</div>
+                  <div className="detail-value" style={{ 
+                    lineHeight: '1.3',
+                    fontSize: '9px'
+                  }}>
+                    {expandedImage.negativePrompt}
+                  </div>
+                </div>
+              )}
             </div>
-            
-            <div className="detail-item negative-prompt rainbow-text" style={{
-              fontSize: '10px',
-              marginTop: '8px'
-            }}>
-              <div className="detail-label" style={{ color: '#aaa', marginBottom: '2px' }}>Negative Prompt:</div>
-              <div className="detail-value" style={{ 
-                lineHeight: '1.3',
-                fontSize: '9px'
-              }}>
-                {expandedImage?.negativePrompt || ''}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Main Panel - Image Display Area */}
