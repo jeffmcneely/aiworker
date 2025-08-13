@@ -270,6 +270,25 @@ body {
 .sidebar .gen-link:hover {
     background: #125ea2;
 }
+
+.sidebar-details-panel {
+    display: block;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background: #1976d2;
+    color: #fff;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.2s;
+    height: 180px;
+    overflow-y: auto;
+    max-height: 180px;
+    margin-top: 8px;
+}
+
+.sidebar-details-panel:hover {
+    background: #125ea2;
+}
 /* Form element alignment */
 .request-form label { 
     display: flex; 

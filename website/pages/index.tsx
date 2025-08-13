@@ -77,9 +77,14 @@ export default function Home() {
         {/* Sidebar */}
         <div className="sidebar" id="sidebar">
           <div className="sidebar-content">
-            <Link href="/request" className="gen-link">
-              image generation
-            </Link>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              <Link href="/request" className="gen-link">
+                image generation
+              </Link>
+              <Link href="/monitor" className="gen-link">
+                system monitor
+              </Link>
+            </div>
             
             {imageUrls.length === 0 ? (
               <p>No images found.</p>
@@ -108,17 +113,8 @@ export default function Home() {
           {/* Details Panel - Always Visible at Sidebar Bottom */}
           <div 
             key={expandedImage?.uuid || 'empty'} 
-            className="sidebar-details-panel" 
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              padding: '12px',
-              marginTop: '8px',
-              borderRadius: '8px',
-              height: '180px', // 50% taller than before (was ~120px)
-              overflowY: 'auto',
-              maxHeight: '180px'
-            }}>
+            className="sidebar-details-panel"
+          >
             {/* Filename and Prompt */}
             <div className="detail-item rainbow-text" style={{ 
               display: 'flex', 
