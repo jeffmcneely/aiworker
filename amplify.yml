@@ -5,10 +5,15 @@ applications:
         preBuild:
           commands:
             - npm ci --cache .npm --prefer-offline
+            # Ensure cache directories exist
+            - mkdir -p .next/cache
         build:
           commands:
+            - export NEXT_PUBLIC_AWS_BRANCH=$AWS_BRANCH
             - npm run build
             - ls -la out/ # Debug: list the output directory
+            # Copy _headers file to output directory for Amplify
+            - cp public/_headers out/_headers || echo "_headers file not found, skipping copy"
       artifacts:
         baseDirectory: out
         files:
@@ -16,38 +21,7 @@ applications:
       cache:
         paths:
           - .next/cache/**/*
+          - .next/standalone/**/*
           - .npm/**/*
-      customHeaders:
-        - pattern: '/site.webmanifest'
-          headers:
-            - key: 'Content-Type'
-              value: 'application/manifest+json'
-            - key: 'Access-Control-Allow-Origin'
-              value: '*'
-            - key: 'Cache-Control'
-              value: 'public, max-age=3600'
-        - pattern: '**/*.webmanifest'
-          headers:
-            - key: 'Content-Type'
-              value: 'application/manifest+json'
-            - key: 'Access-Control-Allow-Origin'
-              value: '*'
-            - key: 'Cache-Control'
-              value: 'public, max-age=3600'
-        - pattern: '**/*.xml'
-          headers:
-            - key: 'Content-Type'
-              value: 'application/xml'
-        - pattern: '**/*.png'
-          headers:
-            - key: 'Content-Type'
-              value: 'image/png'
-            - key: 'Cache-Control'
-              value: 'public, max-age=31536000'
-        - pattern: '**/*'
-          headers:
-            - key: 'Strict-Transport-Security'
-              value: 'max-age=31536000; includeSubDomains'
-            - key: 'X-Frame-Options'
-              value: 'DENY'
+          - node_modules/**/*
     appRoot: website

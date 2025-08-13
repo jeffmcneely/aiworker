@@ -1,0 +1,30 @@
+{
+  "prompt": {
+    "node": "16",
+    "input": "text"
+  },
+  "negativePrompt": {
+    "node": "40",
+    "input": "text"
+  },
+  "height": {
+    "node": "53",
+    "input": "height"
+  },
+  "width": {
+    "node": "53",
+    "input": "width"
+  },
+  "steps": {
+    "node": "3",
+    "input": "steps"
+  },
+  "seed": {
+    "node": "3",
+    "input": "seed"
+  },
+  "cfg": {
+    "node": "3",
+    "input": "cfg"
+  }
+}

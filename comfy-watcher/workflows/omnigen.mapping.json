@@ -1,0 +1,22 @@
+{
+  "prompt": {
+    "node": "6",
+    "input": "text"
+  },
+  "negativePrompt": {
+    "node": "7",
+    "input": "text"
+  },
+  "height": {
+    "node": "11",
+    "input": "height"
+  },
+  "width": {
+    "node": "11",
+    "input": "width"
+  },
+  "seed": {
+    "node": "21",
+    "input": "noise_seed"
+  }
+}

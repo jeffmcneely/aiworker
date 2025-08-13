@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import styles from './MetricsWidget.module.css'
 
 interface MetricsData {
@@ -73,8 +73,16 @@ export default function MetricsWidget() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [retryCount, setRetryCount] = useState(0)
   const [selectedHost, setSelectedHost] = useState<string | null>(null)
+  const [isPaused, setIsPaused] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
-  const fetchMetricsList = async () => {
+  // Handle client-side initialization to prevent hydration mismatch
+  useEffect(() => {
+    setIsClient(true)
+    setIsPaused(process.env.NEXT_PUBLIC_AWS_BRANCH === 'test')
+  }, [])
+
+  const fetchMetricsList = useCallback(async () => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_METRICS_BUCKET_BASE
       if (!baseUrl) {
@@ -124,7 +132,7 @@ export default function MetricsWidget() {
       setError(errorMessage)
       setRetryCount(prev => prev + 1)
     }
-  }
+  }, [selectedHost])
 
   const fetchMetricsForHost = async (hostname: string) => {
     try {
@@ -159,7 +167,7 @@ export default function MetricsWidget() {
     }
   }
 
-  const fetchAllMetrics = async () => {
+  const fetchAllMetrics = useCallback(async () => {
     if (!metricsList) return
     
     // Fetch metrics for all hosts in parallel
@@ -168,26 +176,28 @@ export default function MetricsWidget() {
     )
     
     await Promise.allSettled(promises)
-  }
+  }, [metricsList])
 
   useEffect(() => {
+    if (isPaused) return
+    
     fetchMetricsList()
     
     // Fetch list every 30 seconds
     const listInterval = setInterval(fetchMetricsList, 30000)
     
     return () => clearInterval(listInterval)
-  }, [])
+  }, [isPaused, fetchMetricsList])
 
   useEffect(() => {
-    if (metricsList && retryCount < 5) {
-      fetchAllMetrics()
-      
-      // Fetch individual metrics every 1 second
-      const metricsInterval = setInterval(fetchAllMetrics, 1000)
-      return () => clearInterval(metricsInterval)
-    }
-  }, [metricsList, retryCount])
+    if (isPaused || !metricsList || retryCount >= 5) return
+    
+    fetchAllMetrics()
+    
+    // Fetch individual metrics every 1 second
+    const metricsInterval = setInterval(fetchAllMetrics, 1000)
+    return () => clearInterval(metricsInterval)
+  }, [metricsList, retryCount, isPaused, fetchAllMetrics])
 
   const currentMetrics = selectedHost ? metricsCollection[selectedHost] : null
   const hostOptions = metricsList ? Object.keys(metricsList) : []
@@ -197,8 +207,17 @@ export default function MetricsWidget() {
       <div className={styles.widget}>
         <div className={styles.header}>
           <h3>System Metrics</h3>
-          <div className={styles.status} style={{ color: '#ef4444' }}>
-            Error {retryCount > 0 && `(${retryCount})`}
+          <div className={styles.controls}>
+            <button 
+              onClick={() => setIsPaused(!isPaused)}
+              className={styles.pauseButton}
+              title={isPaused ? 'Resume updates' : 'Pause updates'}
+            >
+              {isPaused ? '▶️' : '⏸️'}
+            </button>
+            <div className={styles.status} style={{ color: '#ef4444' }}>
+              Error {retryCount > 0 && `(${retryCount})`}
+            </div>
           </div>
         </div>
         <div className={styles.error}>
@@ -218,7 +237,16 @@ export default function MetricsWidget() {
       <div className={styles.widget}>
         <div className={styles.header}>
           <h3>System Metrics</h3>
-          <div className={styles.status}>Loading...</div>
+          <div className={styles.controls}>
+            <button 
+              onClick={() => setIsPaused(!isPaused)}
+              className={styles.pauseButton}
+              title={isPaused ? 'Resume updates' : 'Pause updates'}
+            >
+              {isPaused ? '▶️' : '⏸️'}
+            </button>
+            <div className={styles.status}>Loading...</div>
+          </div>
         </div>
         <div className={styles.loading}>Fetching metrics list...</div>
       </div>
@@ -230,7 +258,16 @@ export default function MetricsWidget() {
       <div className={styles.widget}>
         <div className={styles.header}>
           <h3>System Metrics</h3>
-          <div className={styles.status}>Loading...</div>
+          <div className={styles.controls}>
+            <button 
+              onClick={() => setIsPaused(!isPaused)}
+              className={styles.pauseButton}
+              title={isPaused ? 'Resume updates' : 'Pause updates'}
+            >
+              {isPaused ? '▶️' : '⏸️'}
+            </button>
+            <div className={styles.status}>Loading...</div>
+          </div>
         </div>
         <div className={styles.loading}>
           {hostOptions.length > 0 ? 'Fetching metrics...' : 'No hosts available'}
@@ -245,8 +282,17 @@ export default function MetricsWidget() {
     <div className={styles.widget}>
       <div className={styles.header}>
         <h3>System Metrics</h3>
-        <div className={styles.status} style={{ color: '#4ade80' }}>
-          Live • {lastUpdate?.toLocaleTimeString()}
+        <div className={styles.controls}>
+          <button 
+            onClick={() => setIsPaused(!isPaused)}
+            className={styles.pauseButton}
+            title={isPaused ? 'Resume updates' : 'Pause updates'}
+          >
+            {isPaused ? '▶️' : '⏸️'}
+          </button>
+          <div className={styles.status} style={{ color: isPaused ? '#fbbf24' : '#4ade80' }}>
+            {isPaused ? 'Paused' : 'Live'} • {isClient && lastUpdate ? lastUpdate.toLocaleTimeString() : '--:--:--'}
+          </div>
         </div>
       </div>
       
@@ -261,7 +307,7 @@ export default function MetricsWidget() {
           >
             {hostOptions.map(hostname => (
               <option key={hostname} value={hostname}>
-                {hostname} {metricsList && metricsList[hostname] ? 
+                {hostname} {isClient && metricsList && metricsList[hostname] ? 
                   `(${new Date(metricsList[hostname]).toLocaleTimeString()})` : ''}
               </option>
             ))}

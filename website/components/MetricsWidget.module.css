@@ -32,6 +32,37 @@
   font-weight: 500;
 }
 
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pauseButton {
+  background: transparent;
+  border: 1px solid #4b5563;
+  border-radius: 3px;
+  color: #f9fafb;
+  padding: 2px 4px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 16px;
+  transition: all 0.2s ease;
+}
+
+.pauseButton:hover {
+  background: #374151;
+  border-color: #6b7280;
+}
+
+.pauseButton:active {
+  background: #4b5563;
+}
+
 .hostSelector {
   margin-bottom: 8px;
   padding-bottom: 4px;
@@ -169,6 +200,20 @@
 
   .loading {
     color: #6b7280;
+  }
+
+  .pauseButton {
+    border-color: #d1d5db;
+    color: #111827;
+  }
+
+  .pauseButton:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+
+  .pauseButton:active {
+    background: #e5e7eb;
   }
 }
 

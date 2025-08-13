@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Layout from '../components/Layout'
 import MetricsWidget from '../components/MetricsWidget'
 
@@ -59,7 +59,7 @@ export default function Request() {
     localStorage.setItem('submittedJobs', JSON.stringify(updatedJobs))
   }
 
-  const loadCompletedJobs = async () => {
+  const loadCompletedJobs = useCallback(async () => {
     try {
       const response = await fetch('https://api.mcneely.io/v1/ai/s3list')
       if (!response.ok) throw new Error('Network response was not ok')
@@ -89,7 +89,7 @@ export default function Request() {
     } catch (error) {
       console.error('Failed to fetch completed jobs:', error)
     }
-  }
+  }, [lastCompletedUuids])
 
   useEffect(() => {
     loadJobsFromStorage()
@@ -102,7 +102,7 @@ export default function Request() {
     
     // Cleanup interval on unmount
     return () => clearInterval(interval)
-  }, [lastCompletedUuids])
+  }, [loadCompletedJobs])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
