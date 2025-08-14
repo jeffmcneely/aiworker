@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Layout from '../components/Layout'
 import MetricsWidget from '../components/MetricsWidget'
+import { Authenticator } from '@aws-amplify/ui-react'
 
 interface JobItem {
   id: string
@@ -174,157 +175,177 @@ export default function Request() {
   }
 
   return (
-    <Layout title="Image Generation Request" description="Generate AI images with custom prompts">
-      <div className="request-form">
-        <h2>Image Generation Request</h2>
-        <form onSubmit={handleSubmit}>
-          <label>
-            <span>Model:</span>
-            <select name="model" value={formData.model} onChange={handleInputChange}>
-              <option value="flux">flux</option>
-              <option value="hidream">hidream</option>
-              <option value="omnigen">omnigen</option>
-              <option value="sd3.5">sd3.5</option>
-            </select>
-          </label>
-          
-          <label>
-            <span>Height:</span>
-            <input
-              type="number"
-              name="height"
-              value={formData.height}
-              min="1"
-              max="1024"
-              required
-              onChange={handleInputChange}
-            />
-          </label>
-          
-          <label>
-            <span>Width:</span>
-            <input
-              type="number"
-              name="width"
-              value={formData.width}
-              min="1"
-              max="1024"
-              required
-              onChange={handleInputChange}
-            />
-          </label>
-          
-          <label>
-            <span>Steps:</span>
-            <input
-              type="number"
-              name="steps"
-              value={formData.steps}
-              min="1"
-              max="100"
-              required
-              onChange={handleInputChange}
-            />
-          </label>
-          
-          <label title="Prompt adherence - higher values make the AI follow the prompt more closely">
-            <span>CFG:</span>
-            <input
-              type="number"
-              name="cfg"
-              value={formData.cfg}
-              min="0"
-              max="10"
-              step="0.1"
-              required
-              onChange={handleInputChange}
-            />
-          </label>
-          
-          <div className="seed-container">
-            <label title="Random number seed for reproducible results - use 0 for random generation">
-              <span>Seed:</span>
-              <input
-                type="number"
-                name="seed"
-                value={formData.seed}
-                min="0"
-                max="9007199254740991"
-                style={{ width: '200px' }}
-                onChange={handleInputChange}
-              />
-            </label>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                name="regenerateSeed"
-                checked={formData.regenerateSeed}
-                onChange={handleInputChange}
-              />
-              regenerate
-            </label>
+    <Authenticator>
+      {({ signOut, user }) => (
+        <Layout title="Image Generation Request" description="Generate AI images with custom prompts">
+          <div className="request-form">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2>Image Generation Request</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: '#666', fontSize: '14px' }}>Welcome, {user?.signInDetails?.loginId}</span>
+                <button onClick={signOut} style={{ 
+                  padding: '5px 10px', 
+                  backgroundColor: '#dc2626', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}>
+                  Sign Out
+                </button>
+              </div>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <label>
+                <span>Model:</span>
+                <select name="model" value={formData.model} onChange={handleInputChange}>
+                  <option value="flux">flux</option>
+                  <option value="hidream">hidream</option>
+                  <option value="omnigen">omnigen</option>
+                  <option value="sd3.5">sd3.5</option>
+                </select>
+              </label>
+              
+              <label>
+                <span>Height:</span>
+                <input
+                  type="number"
+                  name="height"
+                  value={formData.height}
+                  min="1"
+                  max="1024"
+                  required
+                  onChange={handleInputChange}
+                />
+              </label>
+              
+              <label>
+                <span>Width:</span>
+                <input
+                  type="number"
+                  name="width"
+                  value={formData.width}
+                  min="1"
+                  max="1024"
+                  required
+                  onChange={handleInputChange}
+                />
+              </label>
+              
+              <label>
+                <span>Steps:</span>
+                <input
+                  type="number"
+                  name="steps"
+                  value={formData.steps}
+                  min="1"
+                  max="100"
+                  required
+                  onChange={handleInputChange}
+                />
+              </label>
+              
+              <label title="Prompt adherence - higher values make the AI follow the prompt more closely">
+                <span>CFG:</span>
+                <input
+                  type="number"
+                  name="cfg"
+                  value={formData.cfg}
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  required
+                  onChange={handleInputChange}
+                />
+              </label>
+              
+              <div className="seed-container">
+                <label title="Random number seed for reproducible results - use 0 for random generation">
+                  <span>Seed:</span>
+                  <input
+                    type="number"
+                    name="seed"
+                    value={formData.seed}
+                    min="0"
+                    max="9007199254740991"
+                    style={{ width: '200px' }}
+                    onChange={handleInputChange}
+                  />
+                </label>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="regenerateSeed"
+                    checked={formData.regenerateSeed}
+                    onChange={handleInputChange}
+                  />
+                  regenerate
+                </label>
+              </div>
+              
+              <label>
+                <span>Prompt:</span>
+                <textarea
+                  name="prompt"
+                  value={formData.prompt}
+                  rows={4}
+                  required
+                  onChange={handleInputChange}
+                />
+              </label>
+              
+              <label>
+                <span>Negative Prompt:</span>
+                <textarea
+                  name="negativePrompt"
+                  value={formData.negativePrompt}
+                  rows={4}
+                  onChange={handleInputChange}
+                />
+              </label>
+              
+              {errorMsg && <div className="error">{errorMsg}</div>}
+              {successMsg && <div className="success" style={{ display: 'block' }}>{successMsg}</div>}
+              
+              <button type="submit">Submit</button>
+            </form>
           </div>
           
-          <label>
-            <span>Prompt:</span>
-            <textarea
-              name="prompt"
-              value={formData.prompt}
-              rows={4}
-              required
-              onChange={handleInputChange}
-            />
-          </label>
-          
-          <label>
-            <span>Negative Prompt:</span>
-            <textarea
-              name="negativePrompt"
-              value={formData.negativePrompt}
-              rows={4}
-              onChange={handleInputChange}
-            />
-          </label>
-          
-          {errorMsg && <div className="error">{errorMsg}</div>}
-          {successMsg && <div className="success" style={{ display: 'block' }}>{successMsg}</div>}
-          
-          <button type="submit">Submit</button>
-        </form>
-      </div>
-      
-      <div className="right-panel">
-        <div className="jobs-panel">
-          <h3>Submitted Jobs</h3>
-          <div className="jobs-list">
-            {jobs.map((job, idx) => (
-              <div key={idx} className="job-item">
-                <div className="job-timestamp">{job.timestamp}</div>
-                <div className="job-id">ID: {job.id}</div>
-              </div>
-            ))}
-            
-            {completedJobs.length > 0 && (
-              <>
-                <div className="job-separator">--- Completed Jobs ---</div>
-                {completedJobs.map((job, idx) => (
-                  <div key={idx} className="job-item completed-job">
-                    <div className="job-timestamp">
-                      {new Date(job.timestamp).toLocaleString()}
-                    </div>
-                    <div className="job-id">UUID: {job.uuid}</div>
-                    <div className="job-status">COMPLETED</div>
+          <div className="right-panel">
+            <div className="jobs-panel">
+              <h3>Submitted Jobs</h3>
+              <div className="jobs-list">
+                {jobs.map((job, idx) => (
+                  <div key={idx} className="job-item">
+                    <div className="job-timestamp">{job.timestamp}</div>
+                    <div className="job-id">ID: {job.id}</div>
                   </div>
                 ))}
-              </>
-            )}
+                
+                {completedJobs.length > 0 && (
+                  <>
+                    <div className="job-separator">--- Completed Jobs ---</div>
+                    {completedJobs.map((job, idx) => (
+                      <div key={idx} className="job-item completed-job">
+                        <div className="job-timestamp">
+                          {new Date(job.timestamp).toLocaleString()}
+                        </div>
+                        <div className="job-id">UUID: {job.uuid}</div>
+                        <div className="job-status">COMPLETED</div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+            
+            <div className="metrics-panel">
+              <MetricsWidget />
+            </div>
           </div>
-        </div>
-        
-        <div className="metrics-panel">
-          <MetricsWidget />
-        </div>
-      </div>
-    </Layout>
+        </Layout>
+      )}
+    </Authenticator>
   )
 }
