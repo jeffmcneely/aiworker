@@ -293,33 +293,35 @@ export default function Request() {
         </form>
       </div>
       
-      <div className="jobs-panel">
-        <h3>Submitted Jobs</h3>
-        <div className="jobs-list">
-          {jobs.map((job, idx) => (
-            <div key={idx} className="job-item">
-              <div className="job-timestamp">{job.timestamp}</div>
-              <div className="job-id">ID: {job.id}</div>
-            </div>
-          ))}
-          
-          {completedJobs.length > 0 && (
-            <>
-              <div className="job-separator">--- Completed Jobs ---</div>
-              {completedJobs.map((job, idx) => (
-                <div key={idx} className="job-item completed-job">
-                  <div className="job-timestamp">
-                    {new Date(job.timestamp).toLocaleString()}
+      <div className="right-panel">
+        <div className="jobs-panel">
+          <h3>Submitted Jobs</h3>
+          <div className="jobs-list">
+            {jobs.map((job, idx) => (
+              <div key={idx} className="job-item">
+                <div className="job-timestamp">{job.timestamp}</div>
+                <div className="job-id">ID: {job.id}</div>
+              </div>
+            ))}
+            
+            {completedJobs.length > 0 && (
+              <>
+                <div className="job-separator">--- Completed Jobs ---</div>
+                {completedJobs.map((job, idx) => (
+                  <div key={idx} className="job-item completed-job">
+                    <div className="job-timestamp">
+                      {new Date(job.timestamp).toLocaleString()}
+                    </div>
+                    <div className="job-id">UUID: {job.uuid}</div>
+                    <div className="job-status">COMPLETED</div>
                   </div>
-                  <div className="job-id">UUID: {job.uuid}</div>
-                  <div className="job-status">COMPLETED</div>
-                </div>
-              ))}
-            </>
-          )}
+                ))}
+              </>
+            )}
+          </div>
         </div>
         
-        <div style={{ marginTop: '16px' }}>
+        <div className="metrics-panel">
           <MetricsWidget />
         </div>
       </div>
