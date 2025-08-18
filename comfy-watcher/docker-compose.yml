@@ -5,12 +5,10 @@ services:
     image: jeffmittens/comfy-watcher:latest
     environment:
       # AWS Configuration
-      - COMFY_AWS_ACCESS_KEY_ID_FILE=/run/secrets/comfy_aws_access_key_id
-      - COMFY_AWS_SECRET_ACCESS_KEY_FILE=/run/secrets/comfy_aws_secret_access_key
-      - COMFY_AWS_S3_BUCKET_FILE=/run/secrets/comfy_aws_s3_bucket
-      - COMFY_AWS_SQS_NAME_FILE=/run/secrets/comfy_aws_sqs_name
-      - COMFY_AWS_DEFAULT_REGION=${COMFY_AWS_DEFAULT_REGION:-us-west-2}
-      
+      - AWS_ACCESS_KEY_ID_FILE=/run/secrets/aws_access_key_id
+      - AWS_SECRET_ACCESS_KEY_FILE=/run/secrets/aws_secret_access_key
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-west-2}
+
       # ComfyUI Configuration
       - COMFY_HOST=${COMFY_HOST:-comfyui}
       - COMFY_PORT=${COMFY_PORT:-8188}
@@ -22,10 +20,8 @@ services:
     volumes:
       - /opt/comfyui/output:/app/output
     secrets:
-      - comfy_aws_access_key_id
-      - comfy_aws_secret_access_key
-      - comfy_aws_s3_bucket
-      - comfy_aws_sqs_name
+      - aws_secret_access_key
+      - aws_access_key_id
     depends_on:
       - comfyui
     restart: unless-stopped

@@ -40,10 +40,10 @@ def read_secret(secret_path):
 def get_aws_credentials():
     # Try to read from Docker secrets first
     logger.debug("Getting AWS credentials...")
-    access_key_file = os.getenv("COMFY_AWS_ACCESS_KEY_ID_FILE")
-    secret_key_file = os.getenv("COMFY_AWS_SECRET_ACCESS_KEY_FILE")
-    logger.debug(f"COMFY_AWS_ACCESS_KEY_ID_FILE: {access_key_file}")
-    logger.debug(f"COMFY_AWS_SECRET_ACCESS_KEY_FILE: {secret_key_file}")
+    access_key_file = os.getenv("AWS_ACCESS_KEY_ID_FILE")
+    secret_key_file = os.getenv("AWS_SECRET_ACCESS_KEY_FILE")
+    logger.debug(f"AWS_ACCESS_KEY_ID_FILE: {access_key_file}")
+    logger.debug(f"AWS_SECRET_ACCESS_KEY_FILE: {secret_key_file}")
     if access_key_file and secret_key_file:
         access_key = read_secret(access_key_file)
         secret_key = read_secret(secret_key_file)
@@ -51,8 +51,8 @@ def get_aws_credentials():
         if access_key and secret_key:
             return access_key, secret_key
     # Fallback to environment variables
-    access_key = os.getenv("COMFY_AWS_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
-    secret_key = os.getenv("COMFY_AWS_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
+    access_key = os.getenv("AWS_ACCESS_KEY_ID")
+    secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
     logger.debug(f"Read access_key: {'set' if access_key else 'not set'}, secret_key: {'set' if secret_key else 'not set'} from environment")
     return access_key, secret_key
 

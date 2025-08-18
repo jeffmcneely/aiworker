@@ -8,11 +8,9 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { randomUUID } = require('crypto');
 
 // CORS configuration
-const allowedOrigins = [
-  'https://ai.mcneely.io',
-  'https://test.ai.mcneely.io',
-  'http://localhost:3000'
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? JSON.parse(process.env.ALLOWED_ORIGINS)
+  : [];
 
 const getCorsHeaders = (origin, isStaticFile = false) => {
   // For static files, be more permissive
