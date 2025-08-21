@@ -3,6 +3,7 @@
 
 const { S3Client, GetObjectCommand,ListObjectsV2Command,PutObjectCommand } = require('@aws-sdk/client-s3');
 const { SQSClient, SendMessageCommand, GetQueueAttributesCommand } = require('@aws-sdk/client-sqs');
+const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const { randomUUID } = require('crypto');
@@ -380,8 +381,131 @@ const sqsMonitor = async (event) => {
   }
 };
 
+const trelloToSQS = async (event) => {
+  const origin = event.headers?.origin || event.headers?.Origin;
+  const corsHeaders = getCorsHeaders(origin);
+  
+  try {
+    // Get Trello credentials from Secrets Manager
+    const secretsClient = new SecretsManagerClient({ region: process.env.AWS_REGION });
+    const secretResponse = await secretsClient.send(new GetSecretValueCommand({
+      SecretId: process.env.TRELLO_SECRET_ARN
+    }));
+    
+    const secrets = JSON.parse(secretResponse.SecretString);
+    const { trelloApiKey, trelloToken } = secrets;
+    
+    // Get board ID from environment variable
+    const boardId = process.env.TRELLO_RENDER_BOARD;
+    if (!boardId) {
+      throw new Error('TRELLO_RENDER_BOARD environment variable not set');
+    }
+    
+    // Fetch cards from Trello board
+    const trelloUrl = `https://api.trello.com/1/boards/${boardId}/cards`;
+    const params = new URLSearchParams({
+      key: trelloApiKey,
+      token: trelloToken,
+      fields: 'name,desc,id'
+    });
+    
+    const trelloResponse = await fetch(`${trelloUrl}?${params}`);
+    if (!trelloResponse.ok) {
+      throw new Error(`Trello API error: ${trelloResponse.status} ${trelloResponse.statusText}`);
+    }
+    
+    const cards = await trelloResponse.json();
+    
+    // Filter cards that have descriptions
+    const cardsWithDescriptions = cards.filter(card => card.desc && card.desc.trim().length > 0);
+    
+    if (cardsWithDescriptions.length === 0) {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        },
+        body: JSON.stringify({ 
+          message: 'No cards with descriptions found',
+          cardsProcessed: 0
+        })
+      };
+    }
+    
+    // Send each card description to SQS SLOW_QUEUE
+    const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
+    const processedCards = [];
+    
+    for (const card of cardsWithDescriptions) {
+      const id = randomUUID();
+      
+      // Create message in same format as FAST_QUEUE
+      const messageObj = {
+        id: id,
+        height: 1024,
+        width: 1024,
+        steps: 20,
+        prompt: card.desc.trim(),
+        negativePrompt: 'blurry, low quality, distorted, ugly, bad anatomy, deformed, poorly drawn',
+        model: 'flux', // Default model for Trello cards
+        seed: Math.floor(Math.random() * (2**53 - 1)),
+        cfg: 7.0,
+        trelloCardId: card.id,
+        trelloCardName: card.name
+      };
+      
+      try {
+        await sqsClient.send(new SendMessageCommand({
+          QueueUrl: process.env.SLOW_QUEUE,
+          MessageBody: JSON.stringify(messageObj),
+          MessageGroupId: '1', // FIFO queue requirement
+        }));
+        
+        processedCards.push({
+          cardId: card.id,
+          cardName: card.name,
+          messageId: id
+        });
+        
+      } catch (sqsError) {
+        console.error(`Failed to send card ${card.id} to SQS:`, sqsError);
+      }
+    }
+    
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      },
+      body: JSON.stringify({
+        message: 'Cards processed successfully',
+        cardsProcessed: processedCards.length,
+        totalCardsWithDescriptions: cardsWithDescriptions.length,
+        processedCards: processedCards
+      })
+    };
+    
+  } catch (err) {
+    console.error('Error in trelloToSQS:', err);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      },
+      body: JSON.stringify({ 
+        error: 'Failed to process Trello cards',
+        details: err.message
+      })
+    };
+  }
+};
+
 module.exports = {
   s3list,
   requestImage,
-  sqsMonitor
+  sqsMonitor,
+  trelloToSQS
 };

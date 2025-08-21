@@ -25,15 +25,18 @@ aws_session = None
 s3 = None
 sqs = None
 ssm = None
+lambda_client = None
 S3_BUCKET = None
-QUEUE_NAME = None
+FAST_QUEUE = None
+SLOW_QUEUE = None
 role_refresh_timer = None
+iteration_counter = 0
 
 # AWS Region
 AWS_REGION = os.getenv("COMFY_AWS_DEFAULT_REGION") or os.getenv("AWS_DEFAULT_REGION", "us-west-2")
 
 # AWS Role to assume
-AWS_ROLE_NAME = os.getenv("AWS_ROLE_NAME", "DndRole")
+AWS_ROLE_NAME = os.getenv("AWS_ROLE_NAME", "comfyrole")
 
 # Function to read Docker secrets
 def read_secret(secret_path):
@@ -75,7 +78,7 @@ def get_initial_aws_credentials():
 
 def assume_dnd_role():
     """Assume the configured AWS role and return session with temporary credentials"""
-    global aws_session, s3, sqs, ssm, S3_BUCKET, QUEUE_NAME
+    global aws_session, s3, sqs, ssm, lambda_client, S3_BUCKET, FAST_QUEUE, SLOW_QUEUE
     
     logger.info(f"Assuming {AWS_ROLE_NAME}...")
     
@@ -118,17 +121,20 @@ def assume_dnd_role():
         s3 = aws_session.client('s3')
         sqs = aws_session.client('sqs')
         ssm = aws_session.client('ssm')
+        lambda_client = aws_session.client('lambda')
         
-        # Get S3 bucket and SQS queue name from SSM
-        S3_BUCKET = get_ssm_parameter('/ai/dnd-bucket')
-        QUEUE_NAME = get_ssm_parameter('/ai/dnd-sqs')
+        # Get S3 bucket and SQS queue names from SSM
+        S3_BUCKET = get_ssm_parameter('/ai/bucket')
+        FAST_QUEUE = get_ssm_parameter('/ai/sqs-fast')
+        SLOW_QUEUE = get_ssm_parameter('/ai/sqs-slow')
         
-        if not S3_BUCKET or not QUEUE_NAME:
-            logger.error(f"Failed to retrieve required SSM parameters. S3_BUCKET: {S3_BUCKET}, QUEUE_NAME: {QUEUE_NAME}")
+        if not S3_BUCKET or not FAST_QUEUE or not SLOW_QUEUE:
+            logger.error(f"Failed to retrieve required SSM parameters. S3_BUCKET: {S3_BUCKET}, FAST_QUEUE: {FAST_QUEUE}, SLOW_QUEUE: {SLOW_QUEUE}")
             return False
         
         logger.info(f"Retrieved S3 bucket: {S3_BUCKET}")
-        logger.info(f"Retrieved SQS queue: {QUEUE_NAME}")
+        logger.info(f"Retrieved fast SQS queue: {FAST_QUEUE}")
+        logger.info(f"Retrieved slow SQS queue: {SLOW_QUEUE}")
         
         return True
         
@@ -146,6 +152,37 @@ def get_ssm_parameter(parameter_name):
     except Exception as e:
         logger.error(f"Failed to get SSM parameter {parameter_name}: {e}")
         return None
+
+def invoke_trello_lambda():
+    """Invoke the Trello to SQS Lambda function"""
+    try:
+        logger.info("Invoking Trello to SQS Lambda function...")
+        response = lambda_client.invoke(
+            FunctionName='ai-trello-to-sqs',
+            InvocationType='RequestResponse',
+            Payload=json.dumps({
+                'httpMethod': 'POST',
+                'headers': {},
+                'body': '{}'
+            })
+        )
+        
+        # Parse the response
+        payload = json.loads(response['Payload'].read())
+        if response.get('StatusCode') == 200:
+            if 'body' in payload:
+                body = json.loads(payload['body'])
+                logger.info(f"Trello Lambda executed successfully: {body.get('message', 'Unknown result')}")
+                if 'cardsProcessed' in body:
+                    logger.info(f"Cards processed: {body['cardsProcessed']}")
+            else:
+                logger.info("Trello Lambda executed successfully")
+        else:
+            logger.error(f"Trello Lambda execution failed with status: {response.get('StatusCode')}")
+            if 'errorMessage' in payload:
+                logger.error(f"Error message: {payload['errorMessage']}")
+    except Exception as e:
+        logger.error(f"Failed to invoke Trello Lambda function: {e}")
 
 def refresh_role():
     """Refresh the assumed role credentials"""
@@ -428,11 +465,24 @@ def main():
             send_sqs_message(" ".join(sys.argv[2:]) or "Hello from SQS!")
             return
         elif sys.argv[1] in ("recv", "receive"):
-            receive_sqs_messages(QUEUE_NAME)
+            # Check both queues when receiving
+            receive_sqs_messages(FAST_QUEUE)
+            receive_sqs_messages(SLOW_QUEUE)
             return
     else:
         while True:
-            receive_sqs_messages(QUEUE_NAME)
+            global iteration_counter
+            iteration_counter += 1
+            
+            # Check both queues in the main loop
+            receive_sqs_messages(FAST_QUEUE)
+            receive_sqs_messages(SLOW_QUEUE)
+            
+            # Every 5 iterations, invoke the Trello Lambda function
+            if iteration_counter % 5 == 0:
+                invoke_trello_lambda()
+                logger.debug(f"Completed iteration {iteration_counter}, invoked Trello Lambda")
+            
             time.sleep(POLL_INTERVAL)
 
 
