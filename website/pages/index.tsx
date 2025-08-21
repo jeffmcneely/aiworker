@@ -26,7 +26,11 @@ export default function Home() {
 
   const fetchImageUrls = async (): Promise<ImageData[]> => {
     try {
-      const response = await fetch('https://api.mcneely.io/v1/ai/s3list')
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE
+      if (!apiBase) {
+        throw new Error('NEXT_PUBLIC_API_BASE environment variable is not set')
+      }
+      const response = await fetch(`${apiBase}/s3list`)
       if (!response.ok) throw new Error('Network response was not ok')
       const data = await response.json()
       return Array.isArray(data) ? data : []

@@ -19,9 +19,10 @@ export default function SQSMonitorWidget() {
 
     try {
       // Try the production API first, fall back to localhost for development
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE
       const apiUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://api.mcneely.io/v1/sqs_monitor'
-        : 'http://localhost:3001/ai/sqs_monitor'
+        ? `${apiBase}/sqs_monitor`
+        : 'http://localhost:3001/sqs_monitor'
       
       const response = await fetch(apiUrl, {
         method: 'GET',
