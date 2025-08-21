@@ -175,6 +175,15 @@ lambda/former2.yml
 comfy-watcher/s3-policy.json
 comfy-watcher/sqs-policy.json
 
+# ===== DOCKER =====
+# Docker Compose files (keep only example files)
+*-compose.yml
+docker-compose.yml
+
+# Docker secrets
+secrets/
+*/secrets/
+
 # ===== TEMPORARY / CACHE =====
 # Temporary folders
 tmp/

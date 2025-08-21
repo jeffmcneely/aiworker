@@ -1,5 +1,7 @@
 from fileinput import filename
 import logging
+import threading
+import datetime
 
 
 # Poll ComfyUI history endpoint for prompt results
@@ -17,6 +19,21 @@ from exif import Image
 log_level = logging.DEBUG if os.environ.get("LOG_LEVEL") == "DEBUG" else logging.INFO
 logging.basicConfig(level=log_level, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
+
+# Global variables for AWS clients and configuration
+aws_session = None
+s3 = None
+sqs = None
+ssm = None
+S3_BUCKET = None
+QUEUE_NAME = None
+role_refresh_timer = None
+
+# AWS Region
+AWS_REGION = os.getenv("COMFY_AWS_DEFAULT_REGION") or os.getenv("AWS_DEFAULT_REGION", "us-west-2")
+
+# AWS Role to assume
+AWS_ROLE_NAME = os.getenv("AWS_ROLE_NAME", "DndRole")
 
 # Function to read Docker secrets
 def read_secret(secret_path):
@@ -36,10 +53,10 @@ def read_secret(secret_path):
         logger.warning(f"Secret file not found: {secret_path}")
         return None
 
-# AWS Configuration - support both secrets and env vars
-def get_aws_credentials():
+# AWS Configuration - support both secrets and env vars for initial credentials
+def get_initial_aws_credentials():
     # Try to read from Docker secrets first
-    logger.debug("Getting AWS credentials...")
+    logger.debug("Getting initial AWS credentials...")
     access_key_file = os.getenv("AWS_ACCESS_KEY_ID_FILE")
     secret_key_file = os.getenv("AWS_SECRET_ACCESS_KEY_FILE")
     logger.debug(f"AWS_ACCESS_KEY_ID_FILE: {access_key_file}")
@@ -56,65 +73,113 @@ def get_aws_credentials():
     logger.debug(f"Read access_key: {'set' if access_key else 'not set'}, secret_key: {'set' if secret_key else 'not set'} from environment")
     return access_key, secret_key
 
-# Get AWS credentials
-aws_access_key_id, aws_secret_access_key = get_aws_credentials()
+def assume_dnd_role():
+    """Assume the configured AWS role and return session with temporary credentials"""
+    global aws_session, s3, sqs, ssm, S3_BUCKET, QUEUE_NAME
+    
+    logger.info(f"Assuming {AWS_ROLE_NAME}...")
+    
+    # Get initial credentials for assuming role
+    initial_access_key, initial_secret_key = get_initial_aws_credentials()
+    
+    # Create initial STS client
+    sts_client = boto3.client(
+        'sts',
+        aws_access_key_id=initial_access_key,
+        aws_secret_access_key=initial_secret_key,
+        region_name=AWS_REGION
+    )
+    
+    try:
+        # Get caller identity to determine account ID
+        caller_identity = sts_client.get_caller_identity()
+        account_id = caller_identity['Account']
+        logger.debug(f"Current account ID: {account_id}")
+        
+        # Assume the configured role
+        role_arn = f'arn:aws:iam::{account_id}:role/{AWS_ROLE_NAME}'
+        response = sts_client.assume_role(
+            RoleArn=role_arn,
+            RoleSessionName='comfy-watcher-session'
+        )
+        
+        credentials = response['Credentials']
+        logger.info(f"Successfully assumed {AWS_ROLE_NAME}. Session expires at: {credentials['Expiration']}")
+        
+        # Create session with temporary credentials
+        aws_session = boto3.Session(
+            aws_access_key_id=credentials['AccessKeyId'],
+            aws_secret_access_key=credentials['SecretAccessKey'],
+            aws_session_token=credentials['SessionToken'],
+            region_name=AWS_REGION
+        )
+        
+        # Initialize AWS clients with the assumed role session
+        s3 = aws_session.client('s3')
+        sqs = aws_session.client('sqs')
+        ssm = aws_session.client('ssm')
+        
+        # Get S3 bucket and SQS queue name from SSM
+        S3_BUCKET = get_ssm_parameter('/ai/dnd-bucket')
+        QUEUE_NAME = get_ssm_parameter('/ai/dnd-sqs')
+        
+        if not S3_BUCKET or not QUEUE_NAME:
+            logger.error(f"Failed to retrieve required SSM parameters. S3_BUCKET: {S3_BUCKET}, QUEUE_NAME: {QUEUE_NAME}")
+            return False
+        
+        logger.info(f"Retrieved S3 bucket: {S3_BUCKET}")
+        logger.info(f"Retrieved SQS queue: {QUEUE_NAME}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to assume {AWS_ROLE_NAME}: {e}")
+        return False
 
-# Function to get S3 bucket (support secrets and env vars)
-def get_s3_bucket():
-    logger.debug("Getting S3 bucket name...")
-    bucket_file = os.getenv("COMFY_AWS_S3_BUCKET_FILE")
-    logger.debug(f"COMFY_AWS_S3_BUCKET_FILE: {bucket_file}")
-    if bucket_file:
-        bucket = read_secret(bucket_file)
-        logger.debug(f"Read S3 bucket from secret: {bucket if bucket else 'not set'}")
-        if bucket:
-            return bucket
-    bucket = os.getenv("COMFY_AWS_S3_BUCKET") or os.getenv("AWS_S3_BUCKET")
-    logger.debug(f"Read S3 bucket from environment: {bucket if bucket else 'not set'}")
-    return bucket
+def get_ssm_parameter(parameter_name):
+    """Get parameter value from AWS SSM Parameter Store"""
+    try:
+        response = ssm.get_parameter(Name=parameter_name)
+        value = response['Parameter']['Value']
+        logger.debug(f"Retrieved SSM parameter {parameter_name}: {value}")
+        return value
+    except Exception as e:
+        logger.error(f"Failed to get SSM parameter {parameter_name}: {e}")
+        return None
 
-# Function to get SQS queue name (support secrets and env vars)
-def get_sqs_queue_name():
-    logger.debug("Getting SQS queue name...")
-    queue_file = os.getenv("COMFY_AWS_SQS_NAME_FILE")
-    logger.debug(f"COMFY_AWS_SQS_NAME_FILE: {queue_file}")
-    if queue_file:
-        queue = read_secret(queue_file)
-        logger.debug(f"Read SQS queue name from secret: {queue if queue else 'not set'}")
-        if queue:
-            return queue
-    queue = os.getenv("COMFY_AWS_SQS_NAME") or os.getenv("AWS_SQS_NAME", "")
-    logger.debug(f"Read SQS queue name from environment: {queue if queue else 'not set'}")
-    return queue
+def refresh_role():
+    """Refresh the assumed role credentials"""
+    logger.info(f"Refreshing {AWS_ROLE_NAME} credentials...")
+    success = assume_dnd_role()
+    if success:
+        # Schedule next refresh in 59 minutes
+        schedule_role_refresh()
+    else:
+        logger.error("Failed to refresh role, retrying in 5 minutes...")
+        # Retry in 5 minutes if failed
+        global role_refresh_timer
+        role_refresh_timer = threading.Timer(300, refresh_role)  # 5 minutes
+        role_refresh_timer.daemon = True
+        role_refresh_timer.start()
 
-# S3 Watcher config
-S3_BUCKET = get_s3_bucket()
+def schedule_role_refresh():
+    """Schedule role refresh in 59 minutes"""
+    global role_refresh_timer
+    # Cancel existing timer if any
+    if role_refresh_timer:
+        role_refresh_timer.cancel()
+    
+    # Schedule refresh in 59 minutes (3540 seconds)
+    role_refresh_timer = threading.Timer(3540, refresh_role)
+    role_refresh_timer.daemon = True
+    role_refresh_timer.start()
+    logger.debug("Scheduled role refresh in 59 minutes")
 
-# SQS config
-QUEUE_NAME = get_sqs_queue_name()
+# ComfyUI and other configuration
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "output")
-
-# ComfyUI config
 COMFY_HOST = os.getenv("COMFY_HOST", "127.0.0.1")
 COMFY_PORT = os.getenv("COMFY_PORT", "8188")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2"))
-
-# AWS Region
-AWS_REGION = os.getenv("COMFY_AWS_DEFAULT_REGION") or os.getenv("AWS_DEFAULT_REGION", "us-west-2")
-
-# Initialize AWS clients with explicit credentials
-s3 = boto3.client(
-    "s3",
-    aws_access_key_id=aws_access_key_id,
-    aws_secret_access_key=aws_secret_access_key,
-    region_name=AWS_REGION
-)
-sqs = boto3.client(
-    "sqs",
-    aws_access_key_id=aws_access_key_id,
-    aws_secret_access_key=aws_secret_access_key,
-    region_name=AWS_REGION
-)
 
 
 class TTI_input:
@@ -349,6 +414,15 @@ def receive_sqs_messages(queue_name):
 
 
 def main():
+    # Initialize AWS role assumption
+    logger.info("Starting comfy-watcher...")
+    if not assume_dnd_role():
+        logger.error(f"Failed to assume {AWS_ROLE_NAME}. Exiting.")
+        sys.exit(1)
+    
+    # Schedule periodic role refresh
+    schedule_role_refresh()
+    
     if len(sys.argv) > 1:
         if sys.argv[1] == "send":
             send_sqs_message(" ".join(sys.argv[2:]) or "Hello from SQS!")
@@ -432,4 +506,17 @@ def poll_comfyui_history(prompt_id, base_url=None) -> dict:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        logger.info("Received interrupt signal, shutting down...")
+        # Cancel the role refresh timer
+        if role_refresh_timer:
+            role_refresh_timer.cancel()
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        # Cancel the role refresh timer
+        if role_refresh_timer:
+            role_refresh_timer.cancel()
+        sys.exit(1)

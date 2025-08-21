@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
 import MetricsWidget from '../components/MetricsWidget'
+import SQSMonitorWidget from '../components/SQSMonitorWidget'
 import Link from 'next/link'
 
 export default function Monitor() {
@@ -78,18 +79,38 @@ export default function Monitor() {
             }}>
               <p>
                 Monitor real-time system metrics including CPU usage, memory consumption, 
-                GPU utilization, and temperature across connected hosts.
+                GPU utilization, temperature, and SQS queue status across connected hosts.
               </p>
             </div>
 
-            {/* Metrics Widget */}
+            {/* Widgets Container */}
             <div style={{
-              transform: 'scale(2)',
-              transformOrigin: 'center top',
-              marginTop: '40px',
-              marginBottom: '100px'
+              display: 'flex',
+              gap: '40px',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              width: '100%'
             }}>
-              {isClient && <MetricsWidget />}
+              {/* Metrics Widget */}
+              <div style={{
+                transform: 'scale(1.5)',
+                transformOrigin: 'center top',
+                marginTop: '20px',
+                marginBottom: '60px'
+              }}>
+                {isClient && <MetricsWidget />}
+              </div>
+
+              {/* SQS Monitor Widget */}
+              <div style={{
+                transform: 'scale(1.5)',
+                transformOrigin: 'center top',
+                marginTop: '20px',
+                marginBottom: '60px'
+              }}>
+                {isClient && <SQSMonitorWidget />}
+              </div>
             </div>
 
             {/* Additional Info */}
@@ -120,6 +141,7 @@ export default function Monitor() {
                 <li>Real-time CPU usage tracking</li>
                 <li>Memory and swap utilization</li>
                 <li>GPU memory and temperature monitoring</li>
+                <li>SQS queue message count monitoring</li>
                 <li>Multi-host support with automatic discovery</li>
                 <li>Live updates with pause/resume functionality</li>
                 <li>Color-coded alerts (green/yellow/red)</li>

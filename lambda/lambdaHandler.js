@@ -2,7 +2,7 @@
 
 
 const { S3Client, GetObjectCommand,ListObjectsV2Command,PutObjectCommand } = require('@aws-sdk/client-s3');
-const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const { SQSClient, SendMessageCommand, GetQueueAttributesCommand } = require('@aws-sdk/client-sqs');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const { randomUUID } = require('crypto');
@@ -312,7 +312,76 @@ const requestImage = async (event) => {
   };
 };
 
+const sqsMonitor = async (event) => {
+  const origin = event.headers?.origin || event.headers?.Origin;
+  const corsHeaders = getCorsHeaders(origin);
+  
+  const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
+  
+  try {
+    const fastQueueUrl = process.env.FAST_QUEUE;
+    const slowQueueUrl = process.env.SLOW_QUEUE;
+    
+    if (!fastQueueUrl || !slowQueueUrl) {
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        },
+        body: JSON.stringify({ error: 'Queue URLs not configured' })
+      };
+    }
+    
+    // Get attributes for both queues
+    const [fastQueueResponse, slowQueueResponse] = await Promise.all([
+      sqsClient.send(new GetQueueAttributesCommand({
+        QueueUrl: fastQueueUrl,
+        AttributeNames: ['ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible']
+      })),
+      sqsClient.send(new GetQueueAttributesCommand({
+        QueueUrl: slowQueueUrl,
+        AttributeNames: ['ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible']
+      }))
+    ]);
+    
+    const result = [
+      {
+        queueName: 'fast',
+        messagesAvailable: parseInt(fastQueueResponse.Attributes?.ApproximateNumberOfMessages || '0'),
+        messagesInFlight: parseInt(fastQueueResponse.Attributes?.ApproximateNumberOfMessagesNotVisible || '0')
+      },
+      {
+        queueName: 'slow', 
+        messagesAvailable: parseInt(slowQueueResponse.Attributes?.ApproximateNumberOfMessages || '0'),
+        messagesInFlight: parseInt(slowQueueResponse.Attributes?.ApproximateNumberOfMessagesNotVisible || '0')
+      }
+    ];
+    
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      },
+      body: JSON.stringify(result)
+    };
+    
+  } catch (err) {
+    console.error('Error monitoring SQS queues:', err);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      },
+      body: JSON.stringify({ error: 'Failed to monitor queues' })
+    };
+  }
+};
+
 module.exports = {
   s3list,
-  requestImage
+  requestImage,
+  sqsMonitor
 };
