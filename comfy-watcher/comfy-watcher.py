@@ -39,41 +39,47 @@ AWS_REGION = os.getenv("COMFY_AWS_DEFAULT_REGION") or os.getenv("AWS_DEFAULT_REG
 AWS_ROLE_NAME = os.getenv("AWS_ROLE_NAME", "comfyrole")
 
 # Function to read Docker secrets
-def read_secret(secret_path):
-    """Read secret from file path, fallback to environment variable"""
-    logger.debug(f"Attempting to read secret from: {secret_path}")
+def read_secret(secret_file_path):
+    if not secret_file_path:
+        return None
     try:
-        with open(secret_path, 'r') as f:
-            value = f.read().strip()
-            # Log only the first 6 and last 2 characters for safety
-            if value:
-                safe_value = value[:6] + ("..." if len(value) > 8 else "") + value[-2:]
-            else:
-                safe_value = "<empty>"
-            logger.debug(f"Successfully read secret from {secret_path}: {safe_value}")
-            return value
-    except FileNotFoundError:
-        logger.warning(f"Secret file not found: {secret_path}")
+        if os.path.exists(secret_file_path):
+            with open(secret_file_path, 'r') as f:
+                value = f.read().strip()
+                return value if value else None
+        else:
+            logger.debug(f"Secret file not found: {secret_file_path}")
+            return None
+    except Exception as e:
+        logger.debug(f"Error reading secret from {secret_file_path}: {e}")
         return None
 
 # AWS Configuration - support both secrets and env vars for initial credentials
 def get_initial_aws_credentials():
-    # Try to read from Docker secrets first
+    # Try to read from Docker secrets first (hardcoded paths)
     logger.debug("Getting initial AWS credentials...")
-    access_key_file = os.getenv("AWS_ACCESS_KEY_ID_FILE")
-    secret_key_file = os.getenv("AWS_SECRET_ACCESS_KEY_FILE")
-    logger.debug(f"AWS_ACCESS_KEY_ID_FILE: {access_key_file}")
-    logger.debug(f"AWS_SECRET_ACCESS_KEY_FILE: {secret_key_file}")
-    if access_key_file and secret_key_file:
-        access_key = read_secret(access_key_file)
-        secret_key = read_secret(secret_key_file)
-        logger.debug(f"Read access_key: {'set' if access_key else 'not set'}, secret_key: {'set' if secret_key else 'not set'} from secrets")
-        if access_key and secret_key:
-            return access_key, secret_key
+    
+    access_key = None
+    secret_key = None
+    
+    # Try Docker secrets at standard paths
+    access_key = read_secret("/run/secrets/aws_access_key_id")
+    secret_key = read_secret("/run/secrets/aws_secret_access_key")
+    logger.debug(f"Read access_key: {'set' if access_key else 'not set'}, secret_key: {'set' if secret_key else 'not set'} from Docker secrets")
+    
+    if access_key and secret_key:
+        return access_key, secret_key
+    
     # Fallback to environment variables
     access_key = os.getenv("AWS_ACCESS_KEY_ID")
     secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
     logger.debug(f"Read access_key: {'set' if access_key else 'not set'}, secret_key: {'set' if secret_key else 'not set'} from environment")
+    
+    if not access_key or not secret_key:
+        logger.warning("No AWS credentials found in Docker secrets or environment variables")
+        logger.info("To use Docker secrets, ensure they are created externally and mounted at /run/secrets/")
+        logger.info("To use environment variables, set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env file")
+    
     return access_key, secret_key
 
 def assume_dnd_role():

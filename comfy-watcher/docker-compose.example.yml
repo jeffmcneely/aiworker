@@ -3,26 +3,37 @@ version: '3.8'
 services:
   comfy-watcher:
     image: jeffmittens/comfy-watcher:latest
+    env_file:
+      - .env  # Load environment variables from .env file
     environment:
+      # ComfyUI Configuration
+      - COMFYUI_URL=${COMFYUI_URL:-http://comfyui:8188}
       # AWS Configuration
-      - AWS_ACCESS_KEY_ID_FILE=/run/secrets/aws_access_key_id
-      - AWS_SECRET_ACCESS_KEY_FILE=/run/secrets/aws_secret_access_key
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-west-2}
       - AWS_ROLE_NAME=${AWS_ROLE_NAME:-DndRole}
 
-      # ComfyUI Configuration
-      - COMFY_HOST=${COMFY_HOST:-comfyui}
-      - COMFY_PORT=${COMFY_PORT:-8188}
       
       # Application Configuration
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - POLL_INTERVAL=${POLL_INTERVAL:-2}
+      - FAST_QUEUE_POLL_INTERVAL=${FAST_QUEUE_POLL_INTERVAL:-5}
+      - SLOW_QUEUE_POLL_INTERVAL=${SLOW_QUEUE_POLL_INTERVAL:-10}
       - OUTPUT_FOLDER=/app/output
     volumes:
       - /opt/comfyui/output:/app/output
     secrets:
       - aws_secret_access_key
       - aws_access_key_id
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     depends_on:
       - comfyui
     restart: unless-stopped
@@ -46,14 +57,18 @@ services:
     networks:
       - comfy-network
     deploy:
+      # No memory or CPU limits set
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-
-    runtime: nvidia
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
 networks:
   comfy-network:
