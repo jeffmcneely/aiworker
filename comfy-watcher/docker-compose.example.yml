@@ -60,11 +60,7 @@ networks:
     driver: bridge
 
 secrets:
-  comfy_aws_access_key_id:
-    file: ./secrets/aws_access_key_id.txt
-  comfy_aws_secret_access_key:
-    file: ./secrets/aws_secret_access_key.txt
-  comfy_aws_s3_bucket:
-    file: ./secrets/aws_s3_bucket.txt
-  comfy_aws_sqs_name:
-    file: ./secrets/aws_sqs_name.txt
+  aws_access_key_id:
+    external: true
+  aws_secret_access_key:
+    external: true
