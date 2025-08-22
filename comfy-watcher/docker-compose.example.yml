@@ -3,8 +3,7 @@ version: '3.8'
 services:
   comfy-watcher:
     image: jeffmittens/comfy-watcher:latest
-    env_file:
-      - .env  # Load environment variables from .env file
+
     environment:
       # ComfyUI Configuration
       - COMFYUI_URL=${COMFYUI_URL:-http://comfyui:8188}
@@ -14,7 +13,7 @@ services:
 
       
       # Application Configuration
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - FAST_QUEUE_POLL_INTERVAL=${FAST_QUEUE_POLL_INTERVAL:-5}
       - SLOW_QUEUE_POLL_INTERVAL=${SLOW_QUEUE_POLL_INTERVAL:-10}
       - OUTPUT_FOLDER=/app/output
@@ -34,9 +33,6 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
-    depends_on:
-      - comfyui
-    restart: unless-stopped
     networks:
       - comfy-network
 
@@ -53,17 +49,14 @@ services:
       USER_ID: "1000"
       GROUP_ID: "1000"
       EXTRA_ARGS: "--listen 0.0.0.0 --disable-smart-memory"
-    restart: unless-stopped
     networks:
       - comfy-network
     deploy:
-      # No memory or CPU limits set
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+      # GPU support handled at Docker Swarm node level
+      # Ensure nodes with GPUs are labeled appropriately
+      placement:
+        constraints:
+          - node.labels.gpu == true
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -72,7 +65,8 @@ services:
 
 networks:
   comfy-network:
-    driver: bridge
+    external: true
+    name: comfy-network
 
 secrets:
   aws_access_key_id:

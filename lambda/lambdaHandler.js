@@ -317,6 +317,15 @@ const sqsMonitor = async (event) => {
   const origin = event.headers?.origin || event.headers?.Origin;
   const corsHeaders = getCorsHeaders(origin);
   
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: corsHeaders,
+      body: ''
+    };
+  }
+  
   const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
   
   try {
@@ -415,9 +424,15 @@ const trelloToSQS = async (event) => {
     }
     
     const cards = await trelloResponse.json();
+    const totalCardsFound = cards.length;
     
-    // Filter cards that have descriptions
-    const cardsWithDescriptions = cards.filter(card => card.desc && card.desc.trim().length > 0);
+    // Filter cards that have descriptions AND name is "start" or "end"
+    const cardsWithDescriptions = cards.filter(card => 
+      card.desc && 
+      card.desc.trim().length > 0 && 
+      (card.name === "start" || card.name === "end")
+    );
+    const cardsWithDescriptionsCount = cardsWithDescriptions.length;
     
     if (cardsWithDescriptions.length === 0) {
       return {
@@ -427,8 +442,11 @@ const trelloToSQS = async (event) => {
           ...corsHeaders
         },
         body: JSON.stringify({ 
-          message: 'No cards with descriptions found',
-          cardsProcessed: 0
+          message: 'No cards with name "start" or "end" and descriptions found',
+          totalCardsFound: totalCardsFound,
+          cardsWithDescriptions: cardsWithDescriptionsCount,
+          sqsMessagesSent: 0,
+          processedCards: []
         })
       };
     }
@@ -436,41 +454,84 @@ const trelloToSQS = async (event) => {
     // Send each card description to SQS SLOW_QUEUE
     const sqsClient = new SQSClient({ region: process.env.AWS_REGION });
     const processedCards = [];
+    let sqsMessagesSent = 0;
+    let sqsErrors = 0;
+    const cardsUpdated = [];
     
     for (const card of cardsWithDescriptions) {
-      const id = randomUUID();
+      const cardMessages = [];
       
-      // Create message in same format as FAST_QUEUE
-      const messageObj = {
-        id: id,
-        height: 1024,
-        width: 1024,
-        steps: 20,
-        prompt: card.desc.trim(),
-        negativePrompt: 'blurry, low quality, distorted, ugly, bad anatomy, deformed, poorly drawn',
-        model: 'flux', // Default model for Trello cards
-        seed: Math.floor(Math.random() * (2**53 - 1)),
-        cfg: 7.0,
-        trelloCardId: card.id,
-        trelloCardName: card.name
-      };
-      
-      try {
-        await sqsClient.send(new SendMessageCommand({
-          QueueUrl: process.env.SLOW_QUEUE,
-          MessageBody: JSON.stringify(messageObj),
-          MessageGroupId: '1', // FIFO queue requirement
-        }));
+      // Create 10 messages for each card with unique IDs
+      for (let i = 0; i < 10; i++) {
+        const id = randomUUID();
         
-        processedCards.push({
-          cardId: card.id,
-          cardName: card.name,
-          messageId: id
-        });
+        // Create message in same format as FAST_QUEUE
+        const messageObj = {
+          id: id,
+          height: 1024,
+          width: 1024,
+          steps: 20,
+          prompt: card.desc.trim(),
+          negativePrompt: 'blurry, low quality, distorted, ugly, bad anatomy, deformed, poorly drawn',
+          model: 'flux', // Default model for Trello cards
+          seed: Math.floor(Math.random() * (2**53 - 1)),
+          cfg: 5.0,
+          trelloCardId: card.id,
+          trelloCardName: card.name,
+          batchIndex: i + 1
+        };
         
-      } catch (sqsError) {
-        console.error(`Failed to send card ${card.id} to SQS:`, sqsError);
+        try {
+          await sqsClient.send(new SendMessageCommand({
+            QueueUrl: process.env.SLOW_QUEUE,
+            MessageBody: JSON.stringify(messageObj),
+            MessageGroupId: '1', // FIFO queue requirement
+          }));
+          
+          cardMessages.push({
+            messageId: id,
+            batchIndex: i + 1
+          });
+          
+          sqsMessagesSent++;
+          
+        } catch (sqsError) {
+          console.error(`Failed to send card ${card.id} message ${i + 1} to SQS:`, sqsError);
+          sqsErrors++;
+        }
       }
+      
+      // Update card name with "_queued" suffix if we successfully sent at least one message
+      if (cardMessages.length > 0) {
+        try {
+          const updateCardUrl = `https://api.trello.com/1/cards/${card.id}`;
+          const updateParams = new URLSearchParams({
+            key: trelloApiKey,
+            token: trelloToken,
+            name: `${card.name}_queued`
+          });
+          
+          const updateResponse = await fetch(updateCardUrl, {
+            method: 'PUT',
+            body: updateParams
+          });
+          
+          if (updateResponse.ok) {
+            cardsUpdated.push(card.id);
+          } else {
+            console.error(`Failed to update card ${card.id} name:`, updateResponse.status, updateResponse.statusText);
+          }
+        } catch (updateError) {
+          console.error(`Error updating card ${card.id} name:`, updateError);
+        }
+      }
+      
+      processedCards.push({
+        cardId: card.id,
+        cardName: card.name,
+        messages: cardMessages,
+        messagesCount: cardMessages.length
+      });
     }
     
     return {
@@ -480,9 +541,13 @@ const trelloToSQS = async (event) => {
         ...corsHeaders
       },
       body: JSON.stringify({
-        message: 'Cards processed successfully',
+        message: 'Cards processing completed',
+        totalCardsFound: totalCardsFound,
+        cardsWithDescriptions: cardsWithDescriptionsCount,
         cardsProcessed: processedCards.length,
-        totalCardsWithDescriptions: cardsWithDescriptions.length,
+        sqsMessagesSent: sqsMessagesSent,
+        sqsErrors: sqsErrors,
+        cardsUpdated: cardsUpdated.length,
         processedCards: processedCards
       })
     };

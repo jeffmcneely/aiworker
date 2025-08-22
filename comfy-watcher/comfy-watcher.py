@@ -223,6 +223,23 @@ OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "output")
 COMFY_HOST = os.getenv("COMFY_HOST", "127.0.0.1")
 COMFY_PORT = os.getenv("COMFY_PORT", "8188")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2"))
+ORIGINAL_POLL_INTERVAL = POLL_INTERVAL  # Store original value for reset
+current_poll_interval = POLL_INTERVAL  # Current poll interval (may change with backoff)
+
+
+def apply_backoff():
+    """Apply binary backoff to poll interval, max 30 seconds"""
+    global current_poll_interval
+    current_poll_interval = min(current_poll_interval * 2, 30)
+    logger.info(f"ComfyUI failure detected, increasing poll interval to {current_poll_interval} seconds")
+
+
+def reset_poll_interval():
+    """Reset poll interval to original value after successful ComfyUI call"""
+    global current_poll_interval
+    if current_poll_interval != ORIGINAL_POLL_INTERVAL:
+        current_poll_interval = ORIGINAL_POLL_INTERVAL
+        logger.info(f"ComfyUI success detected, resetting poll interval to {current_poll_interval} seconds")
 
 
 class TTI_input:
@@ -317,11 +334,13 @@ def receive_sqs_messages(queue_name):
 
     response = sqs.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
     messages = response.get("Messages", [])
+    comfy_success = False  # Track if ComfyUI processing was successful
+    
     for msg in messages:
         logger.debug(f"SQS received: {msg['Body']}")
         sqs_body_dict = json.loads(msg["Body"])
         tti_input = TTI_input(sqs_body_dict)
-        sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=msg["ReceiptHandle"])
+        receipt_handle = msg["ReceiptHandle"]  # Store receipt handle for later deletion
         # Load workflow from model.json
         try:
             workflow_path = os.path.join(
@@ -332,10 +351,11 @@ def receive_sqs_messages(queue_name):
             with open(workflow_path, "r") as f:
                 workflow = json.load(f)
         except FileNotFoundError:
-            logger.debug(
+            logger.error(
                 f"Workflow file not found at {workflow_path}. Please ensure it exists."
             )
-            return
+            # Don't delete message on error, let it retry
+            continue
 
         # Load mapping configuration for this model
         try:
@@ -347,110 +367,163 @@ def receive_sqs_messages(queue_name):
             with open(mapping_path, "r") as f:
                 mapping = json.load(f)
         except FileNotFoundError:
-            logger.debug(
+            logger.error(
                 f"Mapping file not found at {mapping_path}. Please ensure it exists."
             )
-            return
+            # Don't delete message on error, let it retry
+            continue
 
-        # Apply TTI input parameters to workflow using mapping
-        logger.debug("Applying workflow mapping...")
-        seed = apply_workflow_mapping(workflow, tti_input, mapping)
-        prompt = {"prompt": workflow}
-        data = json.dumps(prompt).encode("utf-8")
-        logger.info(f"using prompt: {tti_input.prompt}")
-        logger.debug(f"Sending workflow to ComfyUI: {data}")
-        comfy_url = f"http://{COMFY_HOST}:{COMFY_PORT}/prompt"
-        response = requests.post(
-            comfy_url,
-            headers={"Content-Type": "application/json"},
-            data=data,
-        )
-        
-        # Measure time for polling ComfyUI history
-        poll_start_time = time.time()
-        poll_response = poll_comfyui_history(response.json().get("prompt_id"))
-        poll_elapsed = time.time() - poll_start_time
-        logger.debug(f"Poll response: {poll_response}")
-        logger.info(f"ComfyUI polling completed in {poll_elapsed:.2f} seconds")
-        
-        # Upload poll_response to S3 as JSON using the message ID
-        output_json_key = f"{tti_input.id}_output.json"
         try:
-            s3.put_object(
-                Bucket=S3_BUCKET,
-                Key=output_json_key,
-                Body=json.dumps(poll_response),
-                ContentType='application/json'
+            # Apply TTI input parameters to workflow using mapping
+            logger.debug("Applying workflow mapping...")
+            seed = apply_workflow_mapping(workflow, tti_input, mapping)
+            prompt = {"prompt": workflow}
+            data = json.dumps(prompt).encode("utf-8")
+            logger.info(f"using prompt: {tti_input.prompt}")
+            logger.debug(f"Sending workflow to ComfyUI: {data}")
+            comfy_url = f"http://{COMFY_HOST}:{COMFY_PORT}/prompt"
+            response = requests.post(
+                comfy_url,
+                headers={"Content-Type": "application/json"},
+                data=data,
+                timeout=30  # Add timeout for ComfyUI request
             )
-            logger.debug(f"Uploaded poll_response to s3://{S3_BUCKET}/{output_json_key}")
-        except Exception as e:
-            logger.error(f"Failed to upload poll_response to S3: {e}")
+            
+            # Check if ComfyUI request was successful
+            if response.status_code != 200:
+                logger.error(f"ComfyUI request failed with status {response.status_code}: {response.text}")
+                # Don't delete message on error, let it retry
+                apply_backoff()
+                continue
+            
+            prompt_id = response.json().get("prompt_id")
+            if not prompt_id:
+                logger.error("ComfyUI response missing prompt_id")
+                # Don't delete message on error, let it retry
+                apply_backoff()
+                continue
+            
+            # Measure time for polling ComfyUI history
+            poll_start_time = time.time()
+            poll_response = poll_comfyui_history(prompt_id)
+            poll_elapsed = time.time() - poll_start_time
+            
+            # Check if polling was successful
+            if poll_response is None:
+                logger.error(f"Failed to get ComfyUI history for prompt_id: {prompt_id}")
+                # Don't delete message on error, let it retry
+                apply_backoff()
+                continue
+            
+            logger.debug(f"Poll response: {poll_response}")
+            logger.info(f"ComfyUI polling completed in {poll_elapsed:.2f} seconds")
+            
+            # Check if expected output exists
+            if "9" not in poll_response or "images" not in poll_response["9"] or not poll_response["9"]["images"]:
+                logger.error("ComfyUI output missing expected image data")
+                # Don't delete message on error, let it retry
+                apply_backoff()
+                continue
         
-        # insert_seed_uuid_exif(
-        #     os.path.join(OUTPUT_FOLDER, poll_response["9"]["images"][0]["filename"]),
-        #     seed,
-        #     tti_input.id,
-        # )
-#        logger.info("Inserted seed and uuid into EXIF metadata.")
-        # Upload generated image to S3
-        image_filename = poll_response["9"]["images"][0]["filename"]
-        ext = os.path.splitext(image_filename)[1][1:]
-        image_path = os.path.join(OUTPUT_FOLDER, image_filename)
-        s3_key = tti_input.id + '.' + ext
-        try:
-            s3.upload_file(image_path, S3_BUCKET, s3_key)
-            logger.debug(f"Uploaded {image_path} to s3://{S3_BUCKET}/{s3_key}")
-        except Exception as e:
-            logger.error(f"Failed to upload {image_path} to S3: {e}")
-
-        # Upload output JSON to S3 with final metadata
-        output_json = {
-            "prompt": tti_input.prompt,
-            "width": tti_input.width,
-            "height": tti_input.height,
-            "seed": seed,
-            "s3_key": s3_key,
-            "cfg": tti_input.cfg,
-            "steps": tti_input.steps,
-            "model": tti_input.model,
-            "negativePrompt": tti_input.negativePrompt,
-            "filename": tti_input.id + "." + ext,
-            "status": "completed",
-            "timestamp": int(time.time()),
-            "elapsed": round(poll_elapsed, 2)
-        }
-        
-        final_json_key = f"{tti_input.id}_final.json"
-        try:
-            s3.put_object(
-                Bucket=S3_BUCKET,
-                Key=final_json_key,
-                Body=json.dumps(output_json),
-                ContentType='application/json'
-            )
-            logger.debug(f"Uploaded final metadata to s3://{S3_BUCKET}/{final_json_key}")
-        except Exception as e:
-            logger.error(f"Failed to upload final metadata to S3: {e}")
-        
-        # Update the original request JSON with the actual seed used
-        if tti_input.seed == 0:
+            # Upload poll_response to S3 as JSON using the message ID
+            output_json_key = f"{tti_input.id}_output.json"
             try:
-                original_json_key = f"{tti_input.id}.json"
-                # Read the original JSON
-                original_response = s3.get_object(Bucket=S3_BUCKET, Key=original_json_key)
-                original_data = json.loads(original_response['Body'].read())
-                # Update with actual seed
-                original_data['seed'] = seed
-                # Write back to S3
                 s3.put_object(
                     Bucket=S3_BUCKET,
-                    Key=original_json_key,
-                    Body=json.dumps(original_data),
+                    Key=output_json_key,
+                    Body=json.dumps(poll_response),
                     ContentType='application/json'
                 )
-                logger.debug(f"Updated original request JSON with actual seed: {seed}")
+                logger.debug(f"Uploaded poll_response to s3://{S3_BUCKET}/{output_json_key}")
             except Exception as e:
-                logger.error(f"Failed to update original request JSON with seed: {e}")
+                logger.error(f"Failed to upload poll_response to S3: {e}")
+                # Don't delete message on S3 error, let it retry
+                continue
+            
+            # Upload generated image to S3
+            image_filename = poll_response["9"]["images"][0]["filename"]
+            ext = os.path.splitext(image_filename)[1][1:]
+            image_path = os.path.join(OUTPUT_FOLDER, image_filename)
+            s3_key = tti_input.id + '.' + ext
+            try:
+                s3.upload_file(image_path, S3_BUCKET, s3_key)
+                logger.debug(f"Uploaded {image_path} to s3://{S3_BUCKET}/{s3_key}")
+            except Exception as e:
+                logger.error(f"Failed to upload {image_path} to S3: {e}")
+                # Don't delete message on S3 error, let it retry
+                continue
+
+            # Upload output JSON to S3 with final metadata
+            output_json = {
+                "prompt": tti_input.prompt,
+                "width": tti_input.width,
+                "height": tti_input.height,
+                "seed": seed,
+                "s3_key": s3_key,
+                "cfg": tti_input.cfg,
+                "steps": tti_input.steps,
+                "model": tti_input.model,
+                "negativePrompt": tti_input.negativePrompt,
+                "filename": tti_input.id + "." + ext,
+                "status": "completed",
+                "timestamp": int(time.time()),
+                "elapsed": round(poll_elapsed, 2)
+            }
+            
+            final_json_key = f"{tti_input.id}_final.json"
+            try:
+                s3.put_object(
+                    Bucket=S3_BUCKET,
+                    Key=final_json_key,
+                    Body=json.dumps(output_json),
+                    ContentType='application/json'
+                )
+                logger.debug(f"Uploaded final metadata to s3://{S3_BUCKET}/{final_json_key}")
+            except Exception as e:
+                logger.error(f"Failed to upload final metadata to S3: {e}")
+                # Don't delete message on S3 error, let it retry
+                continue
+            
+            # Update the original request JSON with the actual seed used
+            if tti_input.seed == 0:
+                try:
+                    original_json_key = f"{tti_input.id}.json"
+                    # Read the original JSON
+                    original_response = s3.get_object(Bucket=S3_BUCKET, Key=original_json_key)
+                    original_data = json.loads(original_response['Body'].read())
+                    # Update with actual seed
+                    original_data['seed'] = seed
+                    # Write back to S3
+                    s3.put_object(
+                        Bucket=S3_BUCKET,
+                        Key=original_json_key,
+                        Body=json.dumps(original_data),
+                        ContentType='application/json'
+                    )
+                    logger.debug(f"Updated original request JSON with actual seed: {seed}")
+                except Exception as e:
+                    logger.error(f"Failed to update original request JSON with seed: {e}")
+                    # This is non-critical, don't fail the whole process
+            
+            # Only delete the SQS message after successful processing
+            logger.info(f"Successfully processed message {tti_input.id}, deleting from SQS queue")
+            sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+            comfy_success = True  # Mark ComfyUI processing as successful
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error communicating with ComfyUI: {e}")
+            # Don't delete message on network error, let it retry
+            apply_backoff()
+            continue
+        except Exception as e:
+            logger.error(f"Unexpected error processing message {tti_input.id}: {e}")
+            # Don't delete message on unexpected error, let it retry
+            apply_backoff()
+            continue
+    
+    # Reset poll interval if ComfyUI processing was successful
+    if comfy_success:
+        reset_poll_interval()
 
 
 # Response: {'prompt_id': 'a3bf9763-4cf8-4aef-9d70-36d89d9d03d5', 'number': 0, 'node_errors': {}}
@@ -484,12 +557,12 @@ def main():
             receive_sqs_messages(FAST_QUEUE)
             receive_sqs_messages(SLOW_QUEUE)
             
-            # Every 5 iterations, invoke the Trello Lambda function
-            if iteration_counter % 5 == 0:
+            # Every 10 iterations, invoke the Trello Lambda function
+            if iteration_counter % 10 == 0:
                 invoke_trello_lambda()
                 logger.debug(f"Completed iteration {iteration_counter}, invoked Trello Lambda")
             
-            time.sleep(POLL_INTERVAL)
+            time.sleep(current_poll_interval)
 
 
 # Utility to look up SQS URL by queue name
