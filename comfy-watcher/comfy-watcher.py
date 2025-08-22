@@ -13,7 +13,6 @@ import json
 import boto3
 import requests
 import secrets
-from exif import Image
 
 # Set logging level based on LOG_LEVEL env var
 log_level = logging.DEBUG if os.environ.get("LOG_LEVEL") == "DEBUG" else logging.INFO
@@ -577,31 +576,6 @@ def get_sqs_url_by_name(queue_name):
         return None
 
 
-# Insert seed and uuid into EXIF metadata of an image
-def insert_seed_uuid_exif(image_path, seed, uuid):
-    with open(image_path, "rb") as f:
-        img = Image(f)
-
-    # Check if the image has EXIF data and ImageDescription tag
-    if img.has_exif and hasattr(img, 'image_description'):
-        # Get the current description (optional)
-        logger.debug(f"Current ImageDescription: {img.image_description}")
-
-        # Set the new ImageDescription
-        img.image_description = f"seed:{seed};uuid:{uuid}"
-
-        # Save the updated image
-        with open("modified_image_exif.jpg", "wb") as new_f:
-            new_f.write(img.bytes)
-        logger.debug("ImageDescription updated successfully using exif library.")
-    elif img.has_exif:
-        # If the tag doesn't exist, you can add it
-        img.image_description = f"seed:{seed};uuid:{uuid}"
-        with open("modified_image_exif.jpg", "wb") as new_f:
-            new_f.write(img.bytes)
-        logger.debug("ImageDescription added successfully using exif library.")
-    else:
-        logger.info("Image does not contain EXIF data or ImageDescription tag.")
 
 
 def poll_comfyui_history(prompt_id, base_url=None) -> dict:
