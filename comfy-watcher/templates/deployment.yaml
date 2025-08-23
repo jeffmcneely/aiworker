@@ -19,7 +19,62 @@ spec:
         runAsUser: {{ .Values.securityContext.runAsUser }}
         runAsGroup: {{ .Values.securityContext.runAsGroup }}
         fsGroup: {{ .Values.securityContext.fsGroup }}
+      initContainers:
+        - name: wait-for-comfyui
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              until wget --quiet --tries=1 --timeout=3 --spider http://localhost:8188/system_stats || exit 1; do
+                echo "Waiting for ComfyUI to be ready..."
+                sleep 5
+              done
+              echo "ComfyUI is ready!"
       containers:
+        - name: comfyui
+          image: "{{ .Values.image.comfyui.repository }}:{{ .Values.image.comfyui.tag }}"
+          imagePullPolicy: {{ .Values.image.comfyui.pullPolicy }}
+          command: ["python", "main.py"]
+          args: ["{{ .Values.environment.comfyui.extraArgs }}"]
+          env:
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "all"
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: "compute,utility"
+          ports:
+            - containerPort: 8188
+              name: http
+          resources:
+            requests:
+              memory: {{ .Values.resources.comfyui.requests.memory }}
+              nvidia.com/gpu: {{ .Values.resources.comfyui.requests["nvidia.com/gpu"] }}
+          readinessProbe:
+            httpGet:
+              path: /system_stats
+              port: 8188
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /system_stats
+              port: 8188
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          volumeMounts:
+            - name: models
+              mountPath: {{ .Values.persistence.hostPath.models }}
+            - name: custom-nodes
+              mountPath: {{ .Values.persistence.hostPath.customNodes }}
+            - name: output
+              mountPath: {{ .Values.persistence.hostPath.output }}
+          securityContext:
+            runAsUser: {{ .Values.environment.comfyui.userId }}
+            runAsGroup: {{ .Values.environment.comfyui.groupId }}
         - name: comfy-watcher
           image: "{{ .Values.image.watcher.repository }}:{{ .Values.image.watcher.tag }}"
           imagePullPolicy: {{ .Values.image.watcher.pullPolicy }}
@@ -29,7 +84,7 @@ spec:
             - name: OUTPUT_FOLDER
               value: {{ .Values.environment.application.outputFolder | quote }}
             - name: COMFYUI_URL
-              value: {{ .Values.environment.comfyui.url | quote }}
+              value: "http://localhost:8188"
             - name: POLL_INTERVAL
               value: {{ .Values.environment.application.fastQueuePollInterval | quote }}
             - name: AWS_DEFAULT_REGION
@@ -50,17 +105,12 @@ spec:
                   key: secretAccessKey
           resources:
             requests:
-              memory: {{ .Values.resources.comfyui.requests.memory }}
-              nvidia.com/gpu: {{ .Values.resources.comfyui.requests["nvidia.com/gpu"] }}
-          ports:
-            - containerPort: 8188
+              memory: {{ .Values.resources.watcher.requests.memory }}
+            limits:
+              memory: {{ .Values.resources.watcher.limits.memory }}
           volumeMounts:
-            - name: models
-              mountPath: {{ .Values.persistence.hostPath.models }}
-            - name: custom-nodes
-              mountPath: {{ .Values.persistence.hostPath.customNodes }}
             - name: output
-              mountPath: {{ .Values.persistence.hostPath.output }}
+              mountPath: {{ .Values.environment.application.outputFolder }}
       volumes:
         - name: models
           hostPath:
