@@ -1,0 +1,87 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comfy-watcher
+  labels:
+    app: comfy-watcher
+spec:
+  replicas: {{ .Values.replicaCount.watcher }}
+  selector:
+    matchLabels:
+      app: comfy-watcher
+  template:
+    metadata:
+      labels:
+        app: comfy-watcher
+    spec:
+      securityContext:
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      containers:
+        - name: comfy-watcher
+          image: "{{ .Values.image.watcher.repository }}:{{ .Values.image.watcher.tag }}"
+          imagePullPolicy: {{ .Values.image.watcher.pullPolicy }}
+          env:
+            - name: LOG_LEVEL
+              value: {{ .Values.environment.application.logLevel | quote }}
+            - name: OUTPUT_FOLDER
+              value: {{ .Values.environment.application.outputFolder | quote }}
+            - name: COMFYUI_URL
+              value: {{ .Values.environment.comfyui.url | quote }}
+            - name: POLL_INTERVAL
+              value: {{ .Values.environment.application.fastQueuePollInterval | quote }}
+            - name: AWS_DEFAULT_REGION
+              value: {{ .Values.environment.aws.region | quote }}
+            - name: COMFY_AWS_DEFAULT_REGION
+              value: {{ .Values.environment.aws.region | quote }}
+            - name: AWS_ROLE_NAME
+              value: {{ .Values.environment.aws.roleName | quote }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: accessKeyId
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets
+                  key: secretAccessKey
+          resources:
+            requests:
+              memory: {{ .Values.resources.comfyui.requests.memory }}
+              nvidia.com/gpu: {{ .Values.resources.comfyui.requests["nvidia.com/gpu"] }}
+          ports:
+            - containerPort: 8188
+          volumeMounts:
+            - name: models
+              mountPath: {{ .Values.persistence.hostPath.models }}
+            - name: custom-nodes
+              mountPath: {{ .Values.persistence.hostPath.customNodes }}
+            - name: output
+              mountPath: {{ .Values.persistence.hostPath.output }}
+      volumes:
+        - name: models
+          hostPath:
+            path: {{ .Values.persistence.hostPath.models }}
+        - name: custom-nodes
+          hostPath:
+            path: {{ .Values.persistence.hostPath.customNodes }}
+        - name: output
+          hostPath:
+            path: {{ .Values.persistence.hostPath.output }}
+      nodeSelector:
+        nvidia.com/gpu: "true"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu
+                    operator: Exists
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      restartPolicy: Always

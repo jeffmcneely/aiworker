@@ -1,0 +1,15 @@
+apiVersion: v2
+name: ai-worker
+description: AI image generation worker with ComfyUI and SQS integration
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - ai
+  - image-generation
+  - comfyui
+  - aws
+  - sqs
+maintainers:
+  - name: jeffmc
+    email: your-email@example.com

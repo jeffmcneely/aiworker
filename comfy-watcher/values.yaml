@@ -1,0 +1,94 @@
+# Default values for ai-worker
+replicaCount:
+  watcher: 1
+  comfyui: 1
+
+image:
+  watcher:
+    repository: jeffmittens/comfy-watcher
+    tag: latest
+    pullPolicy: Always
+  comfyui:
+    repository: ghcr.io/lecode-official/comfyui-docker
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# Environment configuration
+environment:
+  comfyui:
+    url: "http://comfyui:8188"
+    userId: "1000"
+    groupId: "1000"
+    extraArgs: "--listen 0.0.0.0 --disable-smart-memory"
+  aws:
+    region: "us-west-2"
+    roleName: "ai-comfy-role"
+  application:
+    logLevel: "INFO"
+    fastQueuePollInterval: "5"
+    slowQueuePollInterval: "10"
+    outputFolder: "/app/output"
+
+# AWS Secrets (created externally)
+secrets:
+  aws:
+    accessKeyId: "aws-access-key-id"
+    secretAccessKey: "aws-secret-access-key"
+
+# Storage configuration
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteMany
+  size: 100Gi
+  hostPath:
+    models: "/opt/comfyui/models"
+    customNodes: "/opt/comfyui/custom_nodes"
+    output: "/opt/comfyui/output"
+
+# GPU configuration
+gpu:
+  enabled: true
+  nodeSelector:
+    nvidia.com/gpu: "true"
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+
+# Service configuration
+service:
+  comfyui:
+    type: ClusterIP
+    port: 8188
+    targetPort: 8188
+
+# Resource limits
+resources:
+  watcher:
+    limits:
+      memory: 1Gi
+    requests:
+      memory: 512Mi
+  comfyui:
+    requests:
+      memory: 8Gi
+      nvidia.com/gpu: 1
+
+# Node affinity and tolerations for GPU nodes
+nodeAffinity:
+  gpu:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: nvidia.com/gpu
+          operator: Exists
+
+# Security context
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Startup delay for watcher service
+startupDelay:
+  watcher: 60

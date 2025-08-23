@@ -219,8 +219,7 @@ def schedule_role_refresh():
 
 # ComfyUI and other configuration
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "output")
-COMFY_HOST = os.getenv("COMFY_HOST", "127.0.0.1")
-COMFY_PORT = os.getenv("COMFY_PORT", "8188")
+COMFYUI_URL = os.getenv("COMFYUI_URL", "http://127.0.0.1:8188")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2"))
 ORIGINAL_POLL_INTERVAL = POLL_INTERVAL  # Store original value for reset
 current_poll_interval = POLL_INTERVAL  # Current poll interval (may change with backoff)
@@ -380,7 +379,7 @@ def receive_sqs_messages(queue_name):
             data = json.dumps(prompt).encode("utf-8")
             logger.info(f"using prompt: {tti_input.prompt}")
             logger.debug(f"Sending workflow to ComfyUI: {data}")
-            comfy_url = f"http://{COMFY_HOST}:{COMFY_PORT}/prompt"
+            comfy_url = f"{COMFYUI_URL}/prompt"
             response = requests.post(
                 comfy_url,
                 headers={"Content-Type": "application/json"},
@@ -580,7 +579,7 @@ def get_sqs_url_by_name(queue_name):
 
 def poll_comfyui_history(prompt_id, base_url=None) -> dict:
     if base_url is None:
-        base_url = f"http://{COMFY_HOST}:{COMFY_PORT}/history/"
+        base_url = f"{COMFYUI_URL}/history/"
     url = base_url + str(prompt_id)
     delay = 1
     for i in range(600):
