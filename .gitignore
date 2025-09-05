@@ -175,6 +175,12 @@ lambda/former2.yml
 comfy-watcher/s3-policy.json
 comfy-watcher/sqs-policy.json
 
+# Lambda layers - exclude installed Python packages
+lambda/layers/python/lib/
+lambda/layers/python/python/
+lambda/layers/python/__pycache__/
+*.pyc
+
 # ===== DOCKER =====
 # Docker Compose files (keep only example files)
 *-compose.yml
@@ -194,3 +200,8 @@ temp/
 *.swp
 *.swo
 *~
+lambda/.aws-sam/build.toml
+
+comfy-watcher/values.yaml
+
+comfy-watcher/templates/deployment.yaml

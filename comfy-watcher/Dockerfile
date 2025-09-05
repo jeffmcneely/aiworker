@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create output directory
+# Create output directory and set ownership
 RUN mkdir -p /app/output
 
 # Set environment variables with defaults
