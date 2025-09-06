@@ -154,10 +154,6 @@ lerna-debug.log*
 .vscode/
 !.vscode/launch.json
 
-# ===== GIT / GITHUB =====
-# Ignore Copilot instructions and GitHub workflows
-.github/
-
 # ===== AWS =====
 # AWS SAM CLI config
 samconfig.toml
