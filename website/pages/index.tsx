@@ -26,7 +26,11 @@ export default function Home() {
 
   const fetchImageUrls = async (): Promise<ImageData[]> => {
     try {
-      const response = await fetch('https://api.mcneely.io/v1/ai/s3list')
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE
+      if (!apiBase) {
+        throw new Error('NEXT_PUBLIC_API_BASE environment variable is not set')
+      }
+      const response = await fetch(`${apiBase}/s3list`)
       if (!response.ok) throw new Error('Network response was not ok')
       const data = await response.json()
       return Array.isArray(data) ? data : []
@@ -77,9 +81,14 @@ export default function Home() {
         {/* Sidebar */}
         <div className="sidebar" id="sidebar">
           <div className="sidebar-content">
-            <Link href="/request" className="gen-link">
-              image generation
-            </Link>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              <Link href="/request" className="gen-link">
+                image generation
+              </Link>
+              <Link href="/monitor" className="gen-link">
+                system monitor
+              </Link>
+            </div>
             
             {imageUrls.length === 0 ? (
               <p>No images found.</p>
@@ -108,17 +117,8 @@ export default function Home() {
           {/* Details Panel - Always Visible at Sidebar Bottom */}
           <div 
             key={expandedImage?.uuid || 'empty'} 
-            className="sidebar-details-panel" 
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              padding: '12px',
-              marginTop: '8px',
-              borderRadius: '8px',
-              height: '180px', // 50% taller than before (was ~120px)
-              overflowY: 'auto',
-              maxHeight: '180px'
-            }}>
+            className="sidebar-details-panel"
+          >
             {/* Filename and Prompt */}
             <div className="detail-item rainbow-text" style={{ 
               display: 'flex', 

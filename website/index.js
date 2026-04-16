@@ -1,7 +1,12 @@
 // Simulate fetching 5 image URLs (replace with real fetch as needed)
 async function fetchImageUrls() {
   try {
-        const response = await fetch('https://api.mcneely.io/v1/ai/s3list');
+        // Use environment variable or fallback to default
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE;
+        if (!apiBase) {
+            throw new Error('NEXT_PUBLIC_API_BASE environment variable is not set');
+        }
+        const response = await fetch(`${apiBase}/s3list`);
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
         // Expecting an array of objects with filename and url properties
@@ -199,7 +204,11 @@ async function loadCompletedJobs() {
     if (!jobsList) return; // Jobs panel not available on this page
     
     try {
-        const response = await fetch('https://api.mcneely.io/v1/ai/s3list');
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE;
+        if (!apiBase) {
+            throw new Error('NEXT_PUBLIC_API_BASE environment variable is not set');
+        }
+        const response = await fetch(`${apiBase}/s3list`);
         if (!response.ok) throw new Error('Network response was not ok');
         const completedJobs = await response.json();
         
@@ -300,7 +309,11 @@ async function submitRequest(event) {
   const payload = { height, width, steps, seed, prompt, negativePrompt, model };
 
   try {
-    const response = await fetch('https://api.mcneely.io/v1/ai/request', {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE;
+    if (!apiBase) {
+        throw new Error('NEXT_PUBLIC_API_BASE environment variable is not set');
+    }
+    const response = await fetch(`${apiBase}/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
