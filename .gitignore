@@ -15,6 +15,7 @@ Thumbs.db
 .env.test.local
 .env.production.local
 .envrc
+.zshrc*
 
 # ===== PYTHON =====
 # Virtual environments
